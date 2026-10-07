@@ -1,0 +1,784 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ==========================================
+// TESTIMONIAL
+// ==========================================
+
+model Testimonial {
+  id        Int      @id @default(autoincrement())
+  name      String
+  eventType String?
+  rating    Int      @default(5)
+  content   String
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ==========================================
+// CLIENT
+// ==========================================
+
+model Client {
+  id Int @id @default(autoincrement())
+
+  name  String
+  phone String
+  email String?
+
+  eventType String?
+  eventDate String?
+  guests    String?
+  location  String?
+
+  status          String  @default("ליד")
+  addedToCalendar Boolean @default(false)
+
+// ========================================
+// כספים
+// ========================================
+
+totalAmount Float?
+paidAmount  Float?
+
+notes          String?
+additionalInfo String?
+alcoholList String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ========================================
+  // קשרים
+  // ========================================
+
+  services       ClientService[]
+  payments       Payment[]
+  calendarEvents CalendarEvent[]
+  galleries      ClientGallery[]
+contracts Contract[]
+quotes Quote[]
+
+}
+
+// ==========================================
+// CLIENT SERVICE
+// ==========================================
+
+model ClientService {
+  id Int @id @default(autoincrement())
+
+  clientId Int
+  client   Client @relation(fields: [clientId], references: [id])
+
+  serviceName String
+  amount      Float  @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientId])
+  @@index([serviceName])
+}
+
+// ==========================================
+// SERVICE
+// ==========================================
+
+model Service {
+  id Int @id @default(autoincrement())
+
+  // שם השירות
+  title String
+
+  // כתובת השירות
+  slug String @unique
+
+  // תיאור קצר שמופיע בכרטיס
+  description String
+
+  // תמונת השירות
+  image String
+
+  // תיאור נוסף לעמוד השירות
+  subtitle String?
+
+  // תיאור מלא לעמוד השירות
+  longDescription String?
+
+  // רשימת יתרונות / מה כולל השירות
+  features String?
+
+  // סדר הצגת השירותים
+  sortOrder Int @default(0)
+
+  // האם השירות מוצג באתר
+  isActive Boolean @default(true)
+
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+
+// חוזים המתאימים לשירות
+contractTemplates ContractTemplate[]
+
+contracts          Contract[]
+quoteItems QuoteItem[]
+
+@@index([sortOrder])
+@@index([isActive])
+}
+
+// ==========================================
+// PAYMENT / TRANSACTION
+// ==========================================
+
+model Payment {
+  id Int @id @default(autoincrement())
+
+  clientId Int
+  client   Client @relation(fields: [clientId], references: [id])
+
+  amount Float
+
+  // מזומן / אשראי / ביט / פייבוקס / העברה / צ'ק
+  method String
+
+  notes String?
+
+  transactionId String?
+
+  paymentDate DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientId])
+  @@index([paymentDate])
+}
+
+// ==========================================
+// CALENDAR EVENT
+// ==========================================
+
+model CalendarEvent {
+  id Int @id @default(autoincrement())
+
+  clientId Int?
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  // ========================================
+  // פרטי האירוע
+  // ========================================
+
+  title String
+
+  eventType String?
+
+  eventDate String
+
+  location String?
+
+  guests String?
+
+  phone String?
+
+  notes String?
+
+  // מתוכנן / בוצע / בוטל
+  status String @default("מתוכנן")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientId])
+  @@index([eventDate])
+}
+
+// ==========================================
+// LEAD
+// ==========================================
+
+model Lead {
+  id Int @id @default(autoincrement())
+
+  fullName String
+  phone    String
+  email    String?
+
+  eventType String
+  eventDate DateTime?
+  guests    Int?
+
+  services String?
+  notes    String?
+
+  status String @default("חדש")
+
+  createdAt DateTime @default(now())
+}
+
+// ==========================================
+// PORTFOLIO CATEGORY
+// ==========================================
+
+model PortfolioCategory {
+  id Int @id @default(autoincrement())
+
+  // שם הקטגוריה
+  name String
+
+  // כתובת ידידותית לקטגוריה
+  slug String? @unique
+
+  // תיאור אופציונלי
+  description String?
+
+  // סדר הצגת הקטגוריה
+  sortOrder Int @default(0)
+
+  // האם הקטגוריה מוצגת באתר
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ========================================
+  // תמונות וסרטונים
+  // ========================================
+
+  images PortfolioImage[]
+  videos PortfolioVideo[]
+
+  @@index([sortOrder])
+  @@index([isActive])
+}
+
+// ==========================================
+// PORTFOLIO IMAGE
+// ==========================================
+
+model PortfolioImage {
+  id Int @id @default(autoincrement())
+
+  // הקטגוריה שאליה התמונה שייכת
+  categoryId Int
+  category   PortfolioCategory @relation(fields: [categoryId], references: [id])
+
+  // כתובת התמונה
+  url String
+
+  // כותרת אופציונלית
+  title String?
+
+  // טקסט חלופי
+  alt String?
+
+  // סדר הצגת התמונה
+  sortOrder Int @default(0)
+
+  // האם התמונה מוצגת באתר
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([sortOrder])
+  @@index([isActive])
+}
+
+// ==========================================
+// PORTFOLIO VIDEO
+// ==========================================
+
+model PortfolioVideo {
+  id Int @id @default(autoincrement())
+
+  // הקטגוריה שאליה הסרטון שייך
+  categoryId Int
+  category   PortfolioCategory @relation(fields: [categoryId], references: [id])
+
+  // כתובת הסרטון
+  url String
+
+thumbnailUrl String?
+
+  // כותרת הסרטון
+  title String?
+
+  // טקסט חלופי
+  alt String?
+
+  // סדר הצגת הסרטון
+  sortOrder Int @default(0)
+
+  // האם הסרטון מוצג באתר
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+description String?
+
+  @@index([categoryId])
+  @@index([sortOrder])
+  @@index([isActive])
+}
+
+// ==========================================
+// CLIENT GALLERY
+// ==========================================
+//
+// גלריה פרטית של לקוח.
+//
+// הלקוח נכנס באמצעות:
+// קישור אישי + סיסמה
+//
+// expiresAt = NULL
+// פירושו גלריה ללא תאריך תפוגה.
+//
+
+model ClientGallery {
+  id Int @id @default(autoincrement())
+
+  // ========================================
+  // פרטי הגלריה
+  // ========================================
+
+  name String
+
+  // כתובת ייחודית לגלריה
+  slug String @unique
+
+  // סיסמה אישית ללקוח
+  password String
+
+  // ========================================
+  // לקוח
+  // ========================================
+
+  clientId Int?
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  // ========================================
+  // תוקף הגלריה
+  // ========================================
+
+  // NULL = ללא הגבלת זמן
+  expiresAt DateTime?
+
+  // ========================================
+  // סטטוס
+  // ========================================
+
+  isActive Boolean @default(true)
+
+  // ========================================
+  // מעקב הורדות
+  // ========================================
+
+  // האם הלקוח הוריד את כל הגלריה
+  allImagesDownloaded Boolean @default(false)
+
+  // מתי הלקוח הוריד את כל הגלריה
+  completedDownloadAt DateTime?
+
+  // מתי הלקוח נכנס לאחרונה לגלריה
+  lastAccessAt DateTime?
+
+  // ========================================
+  // תאריכים
+  // ========================================
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ========================================
+  // קשרים
+  // ========================================
+
+  images    GalleryImage[]
+  downloads GalleryDownload[]
+
+  @@index([clientId])
+  @@index([expiresAt])
+  @@index([isActive])
+}
+
+// ==========================================
+// GALLERY IMAGE
+// ==========================================
+//
+// תמונה בתוך גלריית לקוח.
+//
+
+model GalleryImage {
+  id Int @id @default(autoincrement())
+
+  // הגלריה שאליה התמונה שייכת
+  galleryId Int
+  gallery   ClientGallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+
+  // כתובת הקובץ
+  url String
+
+  // שם הקובץ המקורי
+  fileName String
+
+  // סדר הצגת התמונה
+  sortOrder Int @default(0)
+
+  // האם התמונה פעילה
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // קשרים
+  downloads GalleryDownload[]
+
+  @@index([galleryId])
+  @@index([sortOrder])
+}
+
+// ==========================================
+// GALLERY DOWNLOAD
+// ==========================================
+//
+// מעקב אחר הורדת תמונות.
+//
+
+model GalleryDownload {
+  id Int @id @default(autoincrement())
+
+  // הגלריה
+  galleryId Int
+  gallery   ClientGallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+
+  // התמונה
+  imageId Int
+  image   GalleryImage @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  // מתי התמונה הורדה
+  downloadedAt DateTime @default(now())
+
+  // תמונה יכולה להירשם פעם אחת לכל גלריה
+  @@unique([galleryId, imageId])
+  @@index([galleryId])
+  @@index([imageId])
+  @@index([downloadedAt])
+}
+
+// ======================================================
+// CONTRACTS - מערכת חוזים Maestro Events
+// ======================================================
+
+model ContractTemplate {
+  id          Int      @id @default(autoincrement())
+
+  // ==========================================
+  // פרטי התבנית
+  // ==========================================
+
+  name        String
+  description String?
+  content     String
+
+  // ==========================================
+  // השירות שאליו התבנית שייכת
+  // ==========================================
+
+  serviceId Int?
+  service   Service? @relation(fields: [serviceId], references: [id])
+
+  // ==========================================
+  // סטטוס
+  // ==========================================
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // חוזים שנוצרו מהתבנית
+  // ==========================================
+
+  contracts Contract[]
+
+
+  @@index([serviceId])
+  @@index([isActive])
+}
+
+model Contract {
+  id Int @id @default(autoincrement())
+
+  // ==========================================
+  // לקוח
+  // ==========================================
+
+  clientId Int
+  client   Client @relation(fields: [clientId], references: [id])
+
+  // ==========================================
+  // תבנית חוזה
+  // ==========================================
+
+  templateId Int?
+  template   ContractTemplate? @relation(fields: [templateId], references: [id])
+
+  // ==========================================
+  // שירות
+  // ==========================================
+
+  serviceId Int?
+  service   Service? @relation(fields: [serviceId], references: [id])
+
+  // ==========================================
+  // פרטי החוזה
+  // ==========================================
+
+  title   String
+  content String
+
+  // הערות מיוחדות שנוספו לחוזה
+  notes String?
+
+  // ==========================================
+  // סטטוס
+  // ==========================================
+
+  status String @default("DRAFT")
+
+  // ==========================================
+  // כספים
+  // ==========================================
+
+  totalAmount     Float?
+  depositAmount   Float?
+  remainingAmount Float?
+
+  depositPercent Float @default(15)
+
+  // ==========================================
+  // שליחה
+  // ==========================================
+
+  sentAt DateTime?
+
+  // ==========================================
+  // חתימה
+  // ==========================================
+
+  signedAt DateTime?
+
+ // החתימה הדיגיטלית של הלקוח
+signatureData String?
+
+// חתימת העסק
+businessSignatureData String?
+
+// אישור שימוש בתמונות לפרסום דיגיטלי
+marketingConsent Boolean?
+
+  // ==========================================
+  // קישור ציבורי ללקוח
+  // ==========================================
+
+  publicToken String? @unique
+
+  // ==========================================
+  // תאריכים
+  // ==========================================
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientId])
+  @@index([templateId])
+  @@index([serviceId])
+  @@index([status])
+}
+
+// ========================================
+// ADMIN USER
+// ========================================
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  role         String   @default("ADMIN")
+  permissions  String   @default("[]")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+// ========================================
+// BUSINESS SETTINGS
+// ========================================
+
+model BusinessSettings {
+  id Int @id @default(1)
+
+  // חתימת העסק
+  businessSignatureData String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ==========================================
+// QUOTE - הצעת מחיר
+// ==========================================
+
+model Quote {
+  id Int @id @default(autoincrement())
+
+  // ==========================================
+  // מספר הצעה
+  // ==========================================
+
+  quoteNumber String @unique
+
+  // ==========================================
+  // לקוח
+  // ==========================================
+
+  clientId Int
+  client   Client @relation(fields: [clientId], references: [id])
+
+  // ==========================================
+  // פרטי ההצעה
+  // ==========================================
+
+  title String @default("הצעת מחיר")
+
+  eventType String?
+  eventDate String?
+  guests String?
+  location String?
+
+  // ==========================================
+  // כספים
+  // ==========================================
+
+  totalAmount Float @default(0)
+
+  // ==========================================
+  // הערות
+  // ==========================================
+
+  notes String?
+
+  // ==========================================
+  // סטטוס
+  // ==========================================
+
+  // DRAFT / SENT / APPROVED / REJECTED / EXPIRED
+  status String @default("DRAFT")
+
+  // ==========================================
+  // קישור ציבורי
+  // ==========================================
+
+  publicToken String? @unique
+
+  // ==========================================
+  // שליחה
+  // ==========================================
+
+  sentAt DateTime?
+
+  // ==========================================
+  // אישור / דחייה
+  // ==========================================
+
+  approvedAt DateTime?
+  rejectedAt DateTime?
+
+  // ==========================================
+  // תאריכים
+  // ==========================================
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ==========================================
+  // פריטים בהצעה
+  // ==========================================
+
+  items QuoteItem[]
+
+  @@index([clientId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+
+// ==========================================
+// QUOTE ITEM - שירות בתוך הצעת מחיר
+// ==========================================
+
+model QuoteItem {
+  id Int @id @default(autoincrement())
+
+  // ==========================================
+  // הצעה
+  // ==========================================
+
+  quoteId Int
+  quote   Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  // ==========================================
+  // שירות מקורי - אופציונלי
+  // ==========================================
+
+  serviceId Int?
+  service   Service? @relation(fields: [serviceId], references: [id])
+
+  // ==========================================
+  // צילום מצב של השירות בזמן ההצעה
+  // ==========================================
+
+  serviceName String
+
+  description String?
+
+  // ==========================================
+  // מחיר
+  // ==========================================
+
+  quantity Int @default(1)
+
+  unitPrice Float @default(0)
+
+  totalPrice Float @default(0)
+
+  // ==========================================
+  // סדר
+  // ==========================================
+
+  sortOrder Int @default(0)
+
+  // ==========================================
+  // תאריכים
+  // ==========================================
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([quoteId])
+  @@index([serviceId])
+  @@index([sortOrder])
+}

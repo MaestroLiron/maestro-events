@@ -1,0 +1,11 @@
+-- CreateTable
+CREATE TABLE "Testimonial" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT NOT NULL,
+    "eventType" TEXT,
+    "rating" INTEGER NOT NULL DEFAULT 5,
+    "content" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);

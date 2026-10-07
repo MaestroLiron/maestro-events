@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-heebo);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-heebo), Arial, sans-serif;
+}
+
+/* ===== Maestro DatePicker ===== */
+
+.maestro-calendar{
+    background:#0b0b0b !important;
+    border:1px solid #D4AF37 !important;
+    border-radius:18px !important;
+    overflow:hidden;
+    font-family:inherit !important;
+    color:white !important;
+    box-shadow:0 15px 40px rgba(0,0,0,.55);
+}
+
+.maestro-calendar .react-datepicker__header{
+    background:#111 !important;
+    border-bottom:1px solid #D4AF37 !important;
+}
+
+.maestro-calendar .react-datepicker__current-month,
+.maestro-calendar .react-datepicker-time__header,
+.maestro-calendar .react-datepicker-year-header{
+    color:#D4AF37 !important;
+    font-weight:700;
+}
+
+.maestro-calendar .react-datepicker__day-name{
+    color:#999 !important;
+}
+
+.maestro-calendar .react-datepicker__day{
+    color:white !important;
+    border-radius:12px;
+    transition:.25s;
+}
+
+.maestro-calendar .react-datepicker__day:hover{
+    background:#D4AF37 !important;
+    color:black !important;
+}
+
+.maestro-calendar .react-datepicker__day--selected{
+    background:#D4AF37 !important;
+    color:black !important;
+    font-weight:bold;
+}
+
+.maestro-calendar .react-datepicker__navigation-icon::before{
+    border-color:#D4AF37 !important;
+}
+
+.maestro-calendar .react-datepicker__triangle{
+    display:none;
+}
+
+.maestro-popper{
+    z-index:9999 !important;
+}
