@@ -1,8 +1,6 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import SectionTitle from "./SectionTitle";
-
 type Testimonial = {
   id: number;
   name: string;
@@ -12,99 +10,60 @@ type Testimonial = {
   status: string;
   createdAt: string;
 };
-
 export default function Testimonials() {
   const [showForm, setShowForm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showAll, setShowAll] = useState(false);
-
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [loadingTestimonials, setLoadingTestimonials] = useState(true);
-
   const [name, setName] = useState("");
   const [eventType, setEventType] = useState("");
   const [rating, setRating] = useState(5);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // ==========================================
   // טעינת המלצות מאושרות בלבד
-  // ==========================================
-
   async function loadTestimonials() {
     try {
       setLoadingTestimonials(true);
-
-      // חשוב מאוד:
-      // בדף הבית אנחנו מבקשים מהשרת
-      // רק המלצות שאושרו.
       const response = await fetch(
         "/api/testimonials?approved=true",
-        {
-          cache: "no-store",
-        }
+        { cache: "no-store" }
       );
-
       if (!response.ok) {
         throw new Error("Failed to load testimonials");
       }
-
       const data = await response.json();
-
-      // הגנה נוספת בצד הלקוח:
-      // גם אם מסיבה כלשהי השרת יחזיר המלצה
-      // שלא אושרה, היא לא תוצג באתר.
       const approvedOnly = Array.isArray(data)
         ? data.filter(
             (testimonial: Testimonial) =>
               testimonial.status?.toUpperCase() === "APPROVED"
           )
         : [];
-
-      console.log(
-        "APPROVED TESTIMONIALS FROM API:",
-        approvedOnly
-      );
-
       setTestimonials(approvedOnly);
     } catch (error) {
-      console.error(
-        "Error loading approved testimonials:",
-        error
-      );
-
+      console.error("Error loading approved testimonials:", error);
       setTestimonials([]);
     } finally {
       setLoadingTestimonials(false);
     }
   }
-
   useEffect(() => {
     loadTestimonials();
   }, []);
-
-  // ==========================================
   // שליחת המלצה
-  // ==========================================
-
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
     if (!name.trim() || !content.trim()) {
       alert("נא למלא שם והמלצה");
       return;
     }
-
     setLoading(true);
-
     try {
       const response = await fetch("/api/testimonials", {
         method: "POST",
-
         headers: {
           "Content-Type": "application/json",
         },
-
         body: JSON.stringify({
           name: name.trim(),
           eventType,
@@ -112,85 +71,43 @@ export default function Testimonials() {
           content: content.trim(),
         }),
       });
-
       const data = await response.json();
-
       if (!response.ok) {
         alert(data?.error || "אירעה שגיאה");
         return;
       }
-
-      // ========================================
-      // איפוס הטופס
-      // ========================================
-
       setName("");
       setEventType("");
       setRating(5);
       setContent("");
       setShowForm(false);
-
-      // ========================================
-      // חשוב:
-      //
-      // ההמלצה החדשה היא PENDING.
-      //
-      // לכן היא לא תתווסף לרשימת ההמלצות
-      // באתר.
-      //
-      // היא תופיע רק בדאשבורד לאישור.
-      // ========================================
-
+      // המלצה חדשה תוצג באתר רק לאחר אישור
       await loadTestimonials();
-
-      // ========================================
-      // חלון הצלחה
-      // ========================================
-
       setShowSuccess(true);
     } catch (error) {
-      console.error(
-        "Submit testimonial error:",
-        error
-      );
-
+      console.error("Submit testimonial error:", error);
       alert("אירעה שגיאה בשליחת ההמלצה");
     } finally {
       setLoading(false);
     }
   }
-
-  // ==========================================
-  // הצגת 3 המלצות
-  // ==========================================
-
   const displayedTestimonials = showAll
     ? testimonials
     : testimonials.slice(0, 3);
-
-  // ==========================================
-  // כוכבים
-  // ==========================================
-
+  // כוכבי דירוג
   function Stars({ rating }: { rating: number }) {
     return (
       <div
-        className="
-          flex
-          justify-center
-          items-center
-          gap-1
-          text-2xl
-          direction-ltr
-        "
+        className="flex items-center justify-center gap-1 text-xl sm:text-2xl"
         dir="ltr"
+        aria-label={`דירוג ${rating} מתוך 5`}
       >
         {[1, 2, 3, 4, 5].map((star) => (
           <span
             key={star}
             className={
               star <= rating
-                ? "text-[#D4AF37] drop-shadow-[0_0_10px_rgba(212,175,55,0.9)]"
+                ? "text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]"
                 : "text-gray-600"
             }
           >
@@ -200,620 +117,285 @@ export default function Testimonials() {
       </div>
     );
   }
-
-  // ==========================================
-  // PAGE
-  // ==========================================
-
   return (
-    <section
-      id="testimonials"
-      className="bg-[#0b0b0b] py-24"
-    >
-      <div className="max-w-6xl mx-auto px-6">
-
-        {/* ===================================== */}
-        {/* כותרת */}
-        {/* ===================================== */}
-
-        <SectionTitle
-          title="לקוחות ממליצים"
-          subtitle="האהבה של הלקוחות שלנו היא ההצלחה הכי גדולה שלנו"
-        />
-
-        {/* ===================================== */}
-        {/* המלצות */}
-        {/* ===================================== */}
-
-        {loadingTestimonials ? (
-          <div className="text-center text-gray-400 py-12">
-            טוען המלצות...
-          </div>
-        ) : testimonials.length === 0 ? (
-          <div className="text-center text-gray-400 py-12">
-            עדיין אין המלצות מאושרות.
-          </div>
-        ) : (
-          <>
-            <div className="grid gap-8 md:grid-cols-3">
-
-              {displayedTestimonials.map(
-                (testimonial) => (
-                  <div
+    <>
+      <section
+        id="testimonials"
+        className="overflow-hidden bg-[#0b0b0b] py-12 sm:py-16 lg:py-24"
+      >
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+          <SectionTitle
+            title="לקוחות ממליצים"
+            subtitle="האהבה של הלקוחות שלנו היא ההצלחה הכי גדולה שלנו"
+          />
+          {/* המלצות */}
+          {loadingTestimonials ? (
+            <div className="py-10 text-center text-sm text-gray-400 sm:py-12 sm:text-base">
+              טוען המלצות...
+            </div>
+          ) : testimonials.length === 0 ? (
+            <div className="py-10 text-center text-sm text-gray-400 sm:py-12 sm:text-base">
+              עדיין אין המלצות מאושרות.
+            </div>
+          ) : (
+            <>
+              {/* מובייל: קרוסלה | מחשב: שלוש עמודות */}
+              <div
+                dir="rtl"
+                className="
+                  -mx-4 flex snap-x snap-mandatory gap-4
+                  overflow-x-auto overscroll-x-contain
+                  px-4 pb-3
+                  [scrollbar-width:none]
+                  [&::-webkit-scrollbar]:hidden
+                  sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5
+                  sm:overflow-visible sm:px-0 sm:pb-0
+                  lg:grid-cols-3 lg:gap-8
+                "
+              >
+                {displayedTestimonials.map((testimonial) => (
+                  <article
                     key={testimonial.id}
                     className="
-                      bg-[#111]
-                      p-8
-                      rounded-3xl
-                      border
-                      border-[#2d2d2d]
-                      transition-all
-                      duration-300
+                      flex w-[86%] shrink-0 snap-center
+                      flex-col items-center rounded-2xl
+                      border border-[#2d2d2d] bg-[#111]
+                      p-5 text-center transition-colors duration-300
                       hover:border-[#D4AF37]
-                      hover:-translate-y-1
-                      hover:shadow-[0_0_30px_rgba(212,175,55,0.12)]
-
-                      flex
-                      flex-col
-                      items-center
-                      text-center
+                      sm:w-auto sm:shrink sm:rounded-3xl sm:p-6
+                      lg:p-8
+                      lg:hover:shadow-[0_0_30px_rgba(212,175,55,0.12)]
                     "
                   >
-
-                    {/* ================================= */}
-                    {/* כוכבים - במרכז */}
-                    {/* ================================= */}
-
-                    <div className="w-full flex justify-center mb-5">
-                      <Stars
-                        rating={testimonial.rating}
-                      />
+                    <div className="mb-4 w-full sm:mb-5">
+                      <Stars rating={testimonial.rating} />
                     </div>
-
-                    {/* ================================= */}
-                    {/* תוכן - במרכז */}
-                    {/* ================================= */}
-
-                    <p
-                      className="
-                        text-gray-300
-                        leading-8
-                        text-center
-                        w-full
-                      "
-                    >
+                    <p className="w-full flex-1 break-words text-sm leading-6 text-gray-300 sm:text-base sm:leading-7">
                       ״{testimonial.content}״
                     </p>
-
-                    {/* ================================= */}
-                    {/* שם - במרכז */}
-                    {/* ================================= */}
-
-                    <div
-                      className="
-                        mt-6
-                        text-[#D4AF37]
-                        font-bold
-                        text-center
-                        w-full
-                      "
-                    >
+                    <div className="mt-5 w-full text-center font-bold text-[#D4AF37] sm:mt-6">
                       {testimonial.name}
                     </div>
-
-                    {/* ================================= */}
-                    {/* סוג אירוע - במרכז */}
-                    {/* ================================= */}
-
                     {testimonial.eventType && (
-                      <div
-                        className="
-                          text-gray-500
-                          mt-1
-                          text-center
-                          w-full
-                        "
-                      >
+                      <div className="mt-1 w-full text-center text-sm text-gray-500">
                         {testimonial.eventType}
                       </div>
                     )}
-
-                  </div>
-                )
-              )}
-
-            </div>
-
-            {/* ===================================== */}
-            {/* לכל ההמלצות */}
-            {/* ===================================== */}
-
-            {testimonials.length > 3 && (
-              <div className="text-center mt-12">
-
-                <button
-                  onClick={() =>
-                    setShowAll(!showAll)
-                  }
-                  className="
-                    group
-                    relative
-                    overflow-hidden
-                    bg-[#D4AF37]
-                    text-black
-                    font-bold
-                    px-10
-                    py-4
-                    rounded-xl
-                    transition-all
-                    duration-300
-                    hover:scale-105
-                    hover:shadow-[0_0_35px_rgba(212,175,55,0.65)]
-                    active:scale-95
-                  "
-                >
-
-                  <span
+                  </article>
+                ))}
+              </div>
+              {/* הצגת כל ההמלצות */}
+              {testimonials.length > 3 && (
+                <div className="mt-6 text-center sm:mt-10">
+                  <button
+                    type="button"
+                    onClick={() => setShowAll(!showAll)}
                     className="
-                      absolute
-                      inset-0
-                      -translate-x-full
-                      group-hover:translate-x-full
-                      transition-transform
-                      duration-700
-                      bg-gradient-to-r
-                      from-transparent
-                      via-white/40
-                      to-transparent
+                      rounded-xl bg-[#D4AF37]
+                      px-6 py-3 text-sm font-bold text-black
+                      transition-all duration-300
+                      hover:bg-[#e8c65b] active:scale-[0.98]
+                      sm:px-10 sm:py-4 sm:text-base
                     "
-                  />
-
-                  <span className="relative z-10">
-                    {showAll
-                      ? "הצג פחות"
-                      : "לכל ההמלצות"}
-                  </span>
-
-                </button>
-
-              </div>
-            )}
-          </>
-        )}
-
-        {/* ===================================== */}
-        {/* כפתור הוספת המלצה */}
-        {/* ===================================== */}
-
-        <div className="text-center mt-10">
-
-          <button
-            onClick={() =>
-              setShowForm(!showForm)
-            }
-            className="
-              mx-auto
-              w-fit
-              bg-[#D4AF37]
-              text-black
-              font-bold
-              px-10
-              py-4
-              rounded-xl
-              shadow-[0_0_25px_rgba(212,175,55,0.45)]
-              hover:shadow-[0_0_40px_rgba(212,175,55,0.75)]
-              hover:scale-105
-              transition-all
-              duration-300
-            "
-          >
-            {showForm
-              ? "סגירת טופס"
-              : "✍️ כתבו לנו המלצה"}
-          </button>
-
-        </div>
-
-        {/* ===================================== */}
-        {/* טופס המלצה */}
-        {/* ===================================== */}
-
-        {showForm && (
-          <form
-            onSubmit={handleSubmit}
-            className="
-              max-w-2xl
-              mx-auto
-              mt-12
-              bg-[#111]
-              p-8
-              rounded-3xl
-              border
-              border-[#2d2d2d]
-            "
-          >
-
-            <h3
+                  >
+                    {showAll ? "הצג פחות" : "לכל ההמלצות"}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+          {/* כפתור הוספת המלצה */}
+          <div className="mt-7 text-center sm:mt-10">
+            <button
+              type="button"
+              onClick={() => setShowForm(!showForm)}
+              aria-expanded={showForm}
               className="
-                text-white
-                text-2xl
-                font-bold
-                text-center
-                mb-6
+                w-full max-w-xs rounded-xl
+                bg-[#D4AF37] px-5 py-3
+                text-sm font-bold text-black
+                shadow-[0_0_20px_rgba(212,175,55,0.2)]
+                transition-all duration-300
+                hover:bg-[#e8c65b] active:scale-[0.98]
+                sm:w-auto sm:max-w-none sm:px-10 sm:py-4 sm:text-base
               "
             >
-              שתפו אותנו בחוויה שלכם
-            </h3>
-
-            {/* שם */}
-
-            <input
-              type="text"
-              placeholder="שם מלא"
-              value={name}
-              onChange={(e) =>
-                setName(e.target.value)
-              }
+              {showForm ? "סגירת טופס" : "✍️ כתבו לנו המלצה"}
+            </button>
+          </div>
+          {/* טופס המלצה */}
+          {showForm && (
+            <form
+              onSubmit={handleSubmit}
               className="
-                text-right
-                w-full
-                bg-[#0b0b0b]
-                border
-                border-[#333]
-                rounded-xl
-                px-5
-                py-4
-                text-white
-                mb-4
-                outline-none
-                focus:border-[#D4AF37]
-              "
-            />
-
-            {/* סוג אירוע */}
-
-            <select
-              value={eventType}
-              onChange={(e) =>
-                setEventType(e.target.value)
-              }
-              className="
-                text-right
-                w-full
-                bg-[#0b0b0b]
-                border
-                border-[#333]
-                rounded-xl
-                px-5
-                py-4
-                text-white
-                mb-5
-                outline-none
-                focus:border-[#D4AF37]
+                mx-auto mt-6 max-w-2xl
+                rounded-2xl border border-[#2d2d2d]
+                bg-[#111] p-4
+                sm:mt-10 sm:rounded-3xl sm:p-8
               "
             >
-              <option value="">
-                סוג האירוע
-              </option>
-
-              <option value="חתונה">
-                חתונה
-              </option>
-
-              <option value="בר מצווה">
-                בר מצווה
-              </option>
-
-              <option value="בת מצווה">
-                בת מצווה
-              </option>
-
-              <option value="אירוסין">
-                אירוסין
-              </option>
-
-              <option value="יום הולדת">
-                יום הולדת
-              </option>
-
-              <option value="אירוע עסקי">
-                אירוע עסקי
-              </option>
-
-              <option value="אחר">
-                אחר
-              </option>
-            </select>
-
-            {/* דירוג */}
-
-            <div className="mb-6 text-center">
-
-              <div className="text-white mb-3">
-                דירוג
-              </div>
-
-              <div
+              <h3 className="mb-5 text-center text-xl font-bold text-white sm:mb-6 sm:text-2xl">
+                שתפו אותנו בחוויה שלכם
+              </h3>
+              <label className="mb-2 block text-sm text-gray-300">
+                שם מלא *
+              </label>
+              <input
+                type="text"
+                autoComplete="name"
+                required
+                placeholder="שם מלא"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 className="
-                  flex
-                  justify-center
-                  gap-2
-                  text-3xl
+                  mb-4 w-full rounded-xl border border-[#333]
+                  bg-[#0b0b0b] px-4 py-3.5 text-right text-base
+                  text-white outline-none
+                  focus:border-[#D4AF37]
                 "
-                dir="ltr"
+              />
+              <label className="mb-2 block text-sm text-gray-300">
+                סוג האירוע
+              </label>
+              <select
+                value={eventType}
+                onChange={(e) => setEventType(e.target.value)}
+                className="
+                  mb-5 w-full rounded-xl border border-[#333]
+                  bg-[#0b0b0b] px-4 py-3.5 text-right text-base
+                  text-white outline-none
+                  focus:border-[#D4AF37]
+                "
               >
-
-                {[1, 2, 3, 4, 5].map(
-                  (star) => (
+                <option value="">סוג האירוע</option>
+                <option value="חתונה">חתונה</option>
+                <option value="בר מצווה">בר מצווה</option>
+                <option value="בת מצווה">בת מצווה</option>
+                <option value="אירוסין">אירוסין</option>
+                <option value="יום הולדת">יום הולדת</option>
+                <option value="אירוע עסקי">אירוע עסקי</option>
+                <option value="אחר">אחר</option>
+              </select>
+              <fieldset className="mb-5">
+                <legend className="mb-3 w-full text-center text-sm text-white">
+                  דירוג
+                </legend>
+                <div className="flex justify-center gap-2" dir="ltr">
+                  {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
                       type="button"
-                      onClick={() =>
-                        setRating(star)
-                      }
+                      onClick={() => setRating(star)}
+                      aria-label={`${star} כוכבים`}
+                      aria-pressed={rating === star}
                       className={`
-                        transition-all
-                        duration-200
+                        text-3xl transition-transform
                         hover:scale-110
                         ${
                           star <= rating
-                            ? "text-[#D4AF37] drop-shadow-[0_0_10px_rgba(212,175,55,0.9)]"
+                            ? "text-[#D4AF37]"
                             : "text-gray-600"
                         }
                       `}
                     >
                       ★
                     </button>
-                  )
-                )}
-
-              </div>
-
-            </div>
-
-            {/* תוכן */}
-
-            <textarea
-              placeholder="כתבו את ההמלצה שלכם..."
-              value={content}
-              onChange={(e) =>
-                setContent(e.target.value)
-              }
-              rows={5}
-              className="
-                text-right
-                w-full
-                bg-[#0b0b0b]
-                border
-                border-[#333]
-                rounded-xl
-                px-5
-                py-4
-                text-white
-                mb-5
-                outline-none
-                focus:border-[#D4AF37]
-                resize-none
-              "
-            />
-
-            {/* שליחה */}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="
-                w-full
-                bg-[#D4AF37]
-                text-black
-                font-bold
-                py-4
-                rounded-xl
-                transition-all
-                duration-300
-                hover:scale-[1.02]
-                hover:shadow-[0_8px_30px_rgba(212,175,55,0.65)]
-                active:scale-[0.98]
-                disabled:opacity-50
-                disabled:hover:scale-100
-              "
-            >
-              {loading
-                ? "שולח..."
-                : "שליחת ההמלצה"}
-            </button>
-
-          </form>
-        )}
-
-      </div>
-
-      {/* ===================================== */}
+                  ))}
+                </div>
+              </fieldset>
+              <label className="mb-2 block text-sm text-gray-300">
+                ההמלצה שלכם *
+              </label>
+              <textarea
+                required
+                placeholder="כתבו את ההמלצה שלכם..."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                rows={4}
+                className="
+                  mb-5 w-full resize-y rounded-xl
+                  border border-[#333] bg-[#0b0b0b]
+                  px-4 py-3.5 text-right text-base text-white
+                  outline-none focus:border-[#D4AF37]
+                "
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="
+                  w-full rounded-xl bg-[#D4AF37]
+                  py-3.5 font-bold text-black
+                  transition-colors hover:bg-[#e8c65b]
+                  disabled:cursor-not-allowed disabled:opacity-50
+                "
+              >
+                {loading ? "שולח..." : "שליחת ההמלצה"}
+              </button>
+              <p className="mt-3 text-center text-xs leading-5 text-gray-500">
+                ההמלצה תפורסם באתר לאחר בדיקה ואישור.
+              </p>
+            </form>
+          )}
+        </div>
+      </section>
       {/* חלון הצלחה */}
-      {/* ===================================== */}
-
       {showSuccess && (
         <div
           className="
-            fixed
-            inset-0
-            z-[9999]
-            flex
-            items-center
-            justify-center
-            bg-black/70
-            backdrop-blur-sm
-            px-6
+            fixed inset-0 z-[99999] flex items-center
+            justify-center overflow-y-auto bg-black/80
+            px-4 py-6 backdrop-blur-sm
           "
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="testimonial-success-title"
         >
-
           <div
             className="
-              relative
-              w-full
-              max-w-md
-              bg-[#0b0b0b]
-              border
-              border-[#D4AF37]
-              rounded-3xl
-              p-8
-              text-center
-              shadow-[0_0_15px_rgba(212,175,55,0.45),0_0_35px_rgba(212,175,55,0.20)]
+              relative my-auto w-full max-w-md
+              rounded-2xl border border-[#D4AF37]
+              bg-[#0b0b0b] p-5 text-center
+              shadow-[0_0_30px_rgba(212,175,55,0.2)]
+              sm:rounded-3xl sm:p-8
             "
           >
-
-            {/* קישוט */}
-
-            <div
-              className="
-                flex
-                items-center
-                justify-center
-                gap-3
-                mb-6
-              "
-            >
-
-              <div className="h-px w-16 bg-[#D4AF37]" />
-
-              <span className="text-[#D4AF37] text-xl">
-                ◆
-              </span>
-
-              <span
-                className="
-                  text-[#D4AF37]
-                  tracking-[0.3em]
-                  text-sm
-                  font-bold
-                "
-              >
+            <div className="mb-5 flex items-center justify-center gap-2 sm:gap-3">
+              <span className="text-sm text-[#D4AF37]">◆</span>
+              <span className="text-xs font-bold tracking-[0.2em] text-[#D4AF37] sm:text-sm">
                 MAESTRO EVENTS
               </span>
-
-              <span className="text-[#D4AF37] text-xl">
-                ◆
-              </span>
-
-              <div className="h-px w-16 bg-[#D4AF37]" />
-
+              <span className="text-sm text-[#D4AF37]">◆</span>
             </div>
-
-            {/* ✓ */}
-
-            <div
-              className="
-                mx-auto
-                mb-5
-                w-16
-                h-16
-                rounded-full
-                border
-                border-[#D4AF37]
-                flex
-                items-center
-                justify-center
-              "
-            >
-              <span className="text-[#D4AF37] text-3xl">
-                ✓
-              </span>
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-[#D4AF37] sm:h-16 sm:w-16">
+              <span className="text-3xl text-[#D4AF37]">✓</span>
             </div>
-
             <h2
-              className="
-                text-white
-                text-2xl
-                font-bold
-                mb-4
-              "
+              id="testimonial-success-title"
+              className="mb-3 text-xl font-bold text-white sm:text-2xl"
             >
-              תודה שבחרתם מאסטרו איוונט
+              תודה שבחרתם במאסטרו איוונט
             </h2>
-
-            <p
-              className="
-                text-gray-300
-                leading-7
-                mb-7
-              "
-            >
+            <p className="mb-6 text-sm leading-6 text-gray-300 sm:text-base sm:leading-7">
               ההמלצה שלכם התקבלה בהצלחה.
               <br />
               היא תיבדק ותופיע באתר לאחר אישור.
               <br />
               ✨ שמחנו לקחת חלק ביום המיוחד שלכם ✨
             </p>
-
             <button
-              onClick={() =>
-                setShowSuccess(false)
-              }
+              type="button"
+              onClick={() => setShowSuccess(false)}
               className="
-                group
-                relative
-                overflow-hidden
-                w-full
-                bg-[#D4AF37]
-                text-black
-                font-bold
-                py-3.5
-                rounded-xl
-                transition-all
-                duration-300
-                hover:scale-[1.02]
-                hover:shadow-[0_0_30px_rgba(212,175,55,0.55)]
-                active:scale-[0.98]
+                w-full rounded-xl bg-[#D4AF37]
+                py-3.5 font-bold text-black
+                transition-colors hover:bg-[#e8c65b]
               "
             >
-
-              <span
-                className="
-                  absolute
-                  inset-0
-                  -translate-x-full
-                  group-hover:translate-x-full
-                  transition-transform
-                  duration-700
-                  bg-gradient-to-r
-                  from-transparent
-                  via-white/50
-                  to-transparent
-                "
-              />
-
-              <span
-                className="
-                  relative
-                  z-10
-                  flex
-                  items-center
-                  justify-center
-                  gap-2
-                "
-              >
-                המשך באתר
-
-                <span
-                  className="
-                    text-lg
-                    transition-transform
-                    duration-300
-                    group-hover:-translate-x-1
-                  "
-                >
-                  ←
-                </span>
-
-              </span>
-
+              המשך באתר ←
             </button>
-
           </div>
-
         </div>
       )}
-
-    </section>
+    </>
   );
 }

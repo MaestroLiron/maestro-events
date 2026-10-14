@@ -1,11 +1,9 @@
 "use client";
-
 import Link from "next/link";
 import { User, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import activeSectionHook from "../hooks/useActiveSection";
-
 const menuItems = [
   { name: "צור קשר", href: "/#contact" },
   { name: "אודות", href: "/#about" },
@@ -15,17 +13,13 @@ const menuItems = [
   { name: "השירותים שלנו", href: "/#services" },
   { name: "דף הבית", href: "/" },
 ];
-
 export default function Header() {
   const pathname = usePathname();
   const activeSection = activeSectionHook();
-
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
   };
-
   return (
     <>
       <header
@@ -57,7 +51,6 @@ export default function Header() {
           "
         >
           {/* התחברות */}
-
           <Link
             href="/admin"
             onClick={closeMobileMenu}
@@ -79,7 +72,6 @@ export default function Header() {
               text-yellow-500
               transition-all
               duration-300
-
               ${
                 pathname === "/admin"
                   ? "bg-yellow-500 text-black shadow-[0_0_20px_rgba(255,215,0,0.6)]"
@@ -90,9 +82,7 @@ export default function Header() {
           >
             <User size={19} />
           </Link>
-
-          {/* Desktop */}
-
+          {/* תפריט מחשב - נשאר באותו סדר */}
           <nav className="hidden lg:block">
             <ul className="flex items-center gap-2 xl:gap-3">
               {menuItems.map((item) => {
@@ -100,18 +90,19 @@ export default function Header() {
                   item.href === "/"
                     ? "home"
                     : item.href.replace("/#", "");
-
                 const isActive =
-                  pathname === "/" && activeSection === sectionId;
-
+                  pathname === "/" &&
+                  activeSection === sectionId;
                 return (
                   <li key={item.name}>
                     <Link
                       href={item.href}
                       onClick={(e) => {
-                        if (item.href === "/" && pathname === "/") {
+                        if (
+                          item.href === "/" &&
+                          pathname === "/"
+                        ) {
                           e.preventDefault();
-
                           window.scrollTo({
                             top: 0,
                             behavior: "smooth",
@@ -130,7 +121,6 @@ export default function Header() {
                         transition-all
                         duration-300
                         whitespace-nowrap
-
                         ${
                           isActive
                             ? "text-black bg-yellow-500 shadow-[0_0_20px_rgba(255,215,0,0.5)]"
@@ -145,9 +135,7 @@ export default function Header() {
               })}
             </ul>
           </nav>
-
-          {/* Hamburger */}
-
+          {/* כפתור פתיחת תפריט מובייל */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
@@ -177,15 +165,10 @@ export default function Header() {
           >
             <Menu size={23} />
           </button>
-
           <div className="hidden lg:block w-10 xl:w-12" />
         </div>
       </header>
-
-      {/* ===================================================== */}
-      {/* MOBILE MENU */}
-      {/* ===================================================== */}
-
+      {/* תפריט מובייל */}
       {mobileMenuOpen && (
         <div
           className="
@@ -197,7 +180,6 @@ export default function Header() {
           "
         >
           {/* רקע */}
-
           <div
             onClick={closeMobileMenu}
             className="
@@ -208,9 +190,7 @@ export default function Header() {
               backdrop-blur-sm
             "
           />
-
-          {/* תפריט */}
-
+          {/* חלונית התפריט */}
           <aside
             dir="rtl"
             onClick={(e) => e.stopPropagation()}
@@ -219,29 +199,20 @@ export default function Header() {
               top-0
               right-0
               z-10
-
               h-[100dvh]
-
               w-[78vw]
               max-w-[330px]
-
               bg-[#090909]
-
               border-l
               border-yellow-500/30
-
               shadow-[-20px_0_60px_rgba(0,0,0,0.9)]
-
               flex
               flex-col
-
               overflow-hidden
-
               pointer-events-auto
             "
           >
-            {/* Header של התפריט */}
-
+            {/* כותרת התפריט */}
             <div
               className="
                 shrink-0
@@ -258,12 +229,10 @@ export default function Header() {
                 <div className="text-[#D4AF37] text-lg font-bold">
                   Maestro
                 </div>
-
                 <div className="text-white/40 text-[9px] tracking-[0.3em]">
                   EVENTS
                 </div>
               </div>
-
               <button
                 type="button"
                 onClick={closeMobileMenu}
@@ -286,49 +255,37 @@ export default function Header() {
                 <X size={21} />
               </button>
             </div>
-
-            {/* קישורים */}
-
+            {/* קישורים - סדר הפוך במובייל בלבד */}
             <nav className="flex-1 overflow-y-auto px-4 py-4">
-              <ul className="flex flex-col gap-1.5">
+              <ul className="flex flex-col-reverse gap-1.5">
                 {menuItems.map((item) => {
                   const sectionId =
                     item.href === "/"
                       ? "home"
                       : item.href.replace("/#", "");
-
                   const isActive =
-                    pathname === "/" && activeSection === sectionId;
-
+                    pathname === "/" &&
+                    activeSection === sectionId;
                   return (
                     <li key={item.name}>
                       <Link
                         href={item.href}
-                        onClick={() => {
-                          closeMobileMenu();
-                        }}
+                        onClick={closeMobileMenu}
                         className={`
                           relative
                           z-20
-
                           flex
                           items-center
                           justify-between
-
                           w-full
                           min-h-[46px]
-
                           px-4
-
                           rounded-xl
                           border
-
                           text-[15px]
                           font-semibold
-
                           select-none
                           touch-manipulation
-
                           ${
                             isActive
                               ? "bg-yellow-500 text-black border-yellow-500 shadow-[0_0_15px_rgba(255,215,0,0.3)]"
@@ -337,7 +294,6 @@ export default function Header() {
                         `}
                       >
                         <span>{item.name}</span>
-
                         <span
                           className={
                             isActive
@@ -353,9 +309,7 @@ export default function Header() {
                 })}
               </ul>
             </nav>
-
-            {/* תחתית */}
-
+            {/* תחתית התפריט */}
             <div
               className="
                 shrink-0
@@ -369,7 +323,6 @@ export default function Header() {
               <div className="text-[#D4AF37] text-xs font-semibold">
                 Maestro Events
               </div>
-
               <div className="text-white/35 text-[10px] mt-1">
                 הופכים אירועים לזיכרונות
               </div>

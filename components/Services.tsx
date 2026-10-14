@@ -1,7 +1,6 @@
 import Image from "next/image";
 import SectionTitle from "./SectionTitle";
 import Link from "next/link";
-
 type Service = {
   title: string;
   subtitle: string;
@@ -9,7 +8,6 @@ type Service = {
   image: string;
   features: string[];
 };
-
 type DbService = {
   id: number;
   title: string;
@@ -19,11 +17,9 @@ type DbService = {
   isActive: boolean;
   sortOrder: number;
 };
-
 // ==========================================
 // תוכן השירותים
 // ==========================================
-
 const services: Record<string, Service> = {
   stills: {
     title: "צילום סטילס",
@@ -38,7 +34,6 @@ const services: Record<string, Service> = {
       "תמונות באיכות גבוהה",
     ],
   },
-
   magnets: {
     title: "צילום מגנטים",
     subtitle: "מגנטים באיכות גבוהה והדפסה במקום.",
@@ -52,7 +47,6 @@ const services: Record<string, Service> = {
       "מזכרת לאורחים",
     ],
   },
-
   slow: {
     title: "חבילת סלואו",
     subtitle: "עשן כבד, בועות סבון וקונפטי.",
@@ -66,7 +60,6 @@ const services: Record<string, Service> = {
       "הפעלת האפקטים ברגע המרכזי",
     ],
   },
-
   fireworks: {
     title: "זיקוקים קרים",
     subtitle: "אפקט מרשים לרגעי השיא.",
@@ -80,7 +73,6 @@ const services: Record<string, Service> = {
       "מתאים לצילומים",
     ],
   },
-
   fruits: {
     title: "קיאק פירות",
     subtitle: "עמדת פירות מעוצבת ומרשימה.",
@@ -94,7 +86,6 @@ const services: Record<string, Service> = {
       "מתאים למגוון אירועים",
     ],
   },
-
   balloons: {
     title: "עיצוב בלונים",
     subtitle: "עיצוב בלונים בהתאמה אישית.",
@@ -108,7 +99,6 @@ const services: Record<string, Service> = {
       "התאמה לקונספט האירוע",
     ],
   },
-
   bar: {
     title: "בר אקטיבי",
     subtitle: "בר מקצועי עם אנרגיה וקוקטיילים.",
@@ -122,7 +112,6 @@ const services: Record<string, Service> = {
       "שירות במהלך האירוע",
     ],
   },
-
   glasses: {
     title: "קיר משקפיים",
     subtitle: "עמדת משקפיים צבעונית ומיוחדת.",
@@ -136,7 +125,6 @@ const services: Record<string, Service> = {
       "אטרקציה לאורחים",
     ],
   },
-
   fueling: {
     title: "עמדת תדלוק לרחבה",
     subtitle: "מתדלקים את הרחבה באנרגיה.",
@@ -151,11 +139,9 @@ const services: Record<string, Service> = {
     ],
   },
 };
-
 // ==========================================
 // שליפת שירותים מהמסד
 // ==========================================
-
 async function getDbServices(): Promise<DbService[]> {
   try {
     const response = await fetch(
@@ -164,228 +150,150 @@ async function getDbServices(): Promise<DbService[]> {
         cache: "no-store",
       }
     );
-
     if (!response.ok) {
       return [];
     }
-
     const data = await response.json();
-
     return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("Services load error:", error);
     return [];
   }
 }
-
 // ==========================================
 // SERVICES
 // ==========================================
-
 export default async function Services() {
   const dbServices = await getDbServices();
-
   const dbBySlug = new Map(
     dbServices.map((service) => [service.slug, service])
   );
-
   const serviceList = Object.entries(services);
-
   return (
     <section
       id="services"
-      className="bg-[#090909] py-16 sm:py-20 lg:py-24"
+      className="bg-[#090909] py-10 sm:py-16 lg:py-24"
     >
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-
         <SectionTitle
           title="השירותים שלנו"
           subtitle="כל מה שצריך כדי להפוך את האירוע שלכם לבלתי נשכח"
         />
-
         {/* ==========================================
-            שירותים
-            מובייל: 1
-            טאבלט: 2
-            מחשב: 3
+            מובייל: קרוסלה אופקית
+            טאבלט: שתי עמודות
+            מחשב: שלוש עמודות
         ========================================== */}
-
         <div
+          dir="rtl"
           className="
-            grid
-            grid-cols-1
-            gap-5
-            sm:gap-6
-            md:grid-cols-2
-            lg:grid-cols-3
-            lg:gap-8
+            -mx-4 flex snap-x snap-mandatory gap-4
+            overflow-x-auto overscroll-x-contain
+            px-4 pb-4
+            [scrollbar-width:none]
+            [&::-webkit-scrollbar]:hidden
+            sm:mx-0 sm:px-0
+            md:grid md:grid-cols-2 md:gap-6
+            md:overflow-visible md:pb-0
+            lg:grid-cols-3 lg:gap-8
           "
         >
           {serviceList.map(([slug, service]) => {
-            // ========================================
             // חיבור למסד הנתונים
-            // ========================================
-
             const dbService =
               dbBySlug.get(slug) ||
               (slug === "fueling"
                 ? dbBySlug.get("refuel")
                 : undefined);
-
             const image =
-              dbService?.image &&
-              dbService.image.trim() !== ""
+              dbService?.image?.trim()
                 ? dbService.image
                 : service.image;
-
-            // ========================================
-            // ה-slug שנשלח לדף השירות
-            // ========================================
-
+            // כתובת דף השירות
             const serviceSlug =
               slug === "fueling" && dbBySlug.has("refuel")
                 ? "refuel"
                 : slug;
-
             return (
-              <div
+              <article
                 key={slug}
                 className="
-                  group
-                  flex
-                  h-full
-                  flex-col
-                  overflow-hidden
-                  rounded-3xl
-                  border
-                  border-[#2a2a2a]
-                  bg-[#111]
-                  transition-all
-                  duration-300
-                  hover:-translate-y-2
+                  group flex w-[82%] shrink-0 snap-center
+                  flex-col overflow-hidden rounded-2xl
+                  border border-[#2a2a2a] bg-[#111]
+                  transition-colors duration-300
                   hover:border-[#D4AF37]
+                  sm:w-[65%]
+                  md:w-auto md:shrink md:snap-align-none
+                  md:rounded-3xl
                 "
               >
-                {/* ======================================
-                    תמונה
-                ====================================== */}
-
+                {/* תמונה */}
                 <div
                   className="
-                    relative
-                    h-52
-                    w-full
-                    shrink-0
-                    overflow-hidden
-                    sm:h-60
-                    lg:h-64
+                    relative h-40 w-full shrink-0 overflow-hidden
+                    sm:h-48 md:h-52 lg:h-64
                   "
                 >
                   <Image
                     src={image}
                     alt={service.title}
                     fill
-                    className="
-                      object-cover
-                      transition-transform
-                      duration-500
-                      group-hover:scale-110
-                    "
                     sizes="
-                      (max-width: 767px) 100vw,
+                      (max-width: 639px) 82vw,
+                      (max-width: 767px) 65vw,
                       (max-width: 1023px) 50vw,
                       33vw
                     "
-                  />
-
-                  {/* שכבת הצללה עדינה */}
-                  <div
                     className="
-                      absolute
-                      inset-0
-                      bg-black/10
-                      transition
-                      duration-300
-                      group-hover:bg-black/0
+                      object-cover transition-transform duration-500
+                      md:group-hover:scale-105
                     "
                   />
+                  <div className="absolute inset-0 bg-black/10" />
                 </div>
-
-                {/* ======================================
-                    תוכן
-                ====================================== */}
-
-                <div
-                  className="
-                    flex
-                    flex-1
-                    flex-col
-                    p-5
-                    text-center
-                    sm:p-6
-                  "
-                >
+                {/* תוכן */}
+                <div className="flex flex-1 flex-col p-4 text-center sm:p-5 lg:p-6">
                   <h3
                     className="
-                      mb-3
-                      text-xl
-                      font-bold
-                      leading-tight
-                      text-[#D4AF37]
-                      sm:text-2xl
+                      mb-2 text-lg font-bold leading-tight
+                      text-[#D4AF37] sm:text-xl lg:mb-3 lg:text-2xl
                     "
                   >
                     {service.title}
                   </h3>
-
                   <p
                     className="
-                      mb-6
-                      text-sm
-                      leading-6
-                      text-gray-400
-                      sm:text-base
-                      sm:leading-7
+                      mb-4 text-sm leading-5 text-gray-300
+                      sm:leading-6 lg:mb-6 lg:text-base lg:leading-7
                     "
                   >
-                    {service.description}
+                    {service.subtitle}
                   </p>
-
-                  {/* ==================================
-                      כפתור
-                  ================================== */}
-
                   <Link
                     href={`/services/${serviceSlug}`}
                     className="
-                      mt-auto
-                      block
-                      w-full
-                      rounded-xl
-                      border
-                      border-[#D4AF37]
-                      px-4
-                      py-3
-                      text-center
-                      text-sm
-                      font-medium
-                      text-[#D4AF37]
-                      transition-all
-                      duration-300
-                      hover:bg-[#D4AF37]
-                      hover:text-black
+                      mt-auto block w-full rounded-xl
+                      border border-[#D4AF37]
+                      px-3 py-2.5 text-center text-sm
+                      font-semibold text-[#D4AF37]
+                      transition-colors duration-300
+                      hover:bg-[#D4AF37] hover:text-black
                       active:scale-[0.98]
-                      sm:text-base
+                      sm:px-4 sm:py-3 sm:text-base
                     "
                   >
                     למידע נוסף
                   </Link>
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>
-
+        {/* רמז להחלקה במובייל */}
+        <p className="mt-2 text-center text-xs text-gray-500 md:hidden">
+          החליקו לצדדים לצפייה בכל השירותים ←
+        </p>
       </div>
     </section>
   );
