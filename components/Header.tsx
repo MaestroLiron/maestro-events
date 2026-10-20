@@ -157,43 +157,7 @@ export default function Header() {
             </ul>
           </nav>
 
-          {/* לוגו בסרגל העליון, בצד שמאל */}
-          <Link
-            href="/"
-            onClick={(e) => {
-              closeMobileMenu();
-              scrollToTop(e);
-            }}
-            aria-label="Maestro Events - דף הבית"
-            className="
-              relative
-              z-[5001]
-              flex
-              shrink-0
-              items-center
-              justify-center
-              mr-auto
-              lg:mr-0
-              lg:ml-4
-            "
-          >
-            <Image
-              src="/M%20logo%20yellow-01.png"
-              alt="Maestro Events"
-              width={64}
-              height={64}
-              priority
-              className="
-                h-10
-                w-10
-                sm:h-12
-                sm:w-12
-                md:h-14
-                md:w-14
-                object-contain
-              "
-            />
-          </Link>
+        
 
           {/* כפתור פתיחת תפריט מובייל */}
           <button
