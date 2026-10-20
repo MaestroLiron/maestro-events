@@ -54,6 +54,15 @@ export default function AdminPortfolioPage() {
 
   const [loading, setLoading] = useState(true);
 
+  const [managingCategory, setManagingCategory] =
+  useState<PortfolioCategory | null>(null);
+
+const [newGalleryFiles, setNewGalleryFiles] =
+  useState<FileList | null>(null);
+
+const [savingGalleryImages, setSavingGalleryImages] =
+  useState(false);
+
   // ========================================
   // CATEGORY FORM
   // ========================================
@@ -856,6 +865,108 @@ export default function AdminPortfolioPage() {
     }
   };
 
+  const addImagesToGallery = async () => {
+  if (!managingCategory || !newGalleryFiles?.length) {
+    alert("בחר תמונות להוספה");
+    return;
+  }
+
+  setSavingGalleryImages(true);
+
+  try {
+    for (const file of Array.from(newGalleryFiles)) {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("mediaType", "image");
+
+      const uploadResponse = await fetch("/api/portfolio/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const uploadData = await uploadResponse.json();
+
+      if (!uploadResponse.ok || !uploadData.url) {
+        throw new Error("העלאת תמונה נכשלה");
+      }
+
+      const response = await fetch("/api/portfolio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "createImage",
+          categoryId: managingCategory.id,
+          url: uploadData.url,
+          title: file.name,
+          alt: file.name,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("שמירת תמונה בגלריה נכשלה");
+      }
+    }
+
+    setNewGalleryFiles(null);
+    await loadPortfolio();
+    alert("התמונות נוספו בהצלחה");
+  } catch (error) {
+    console.error(error);
+    alert("לא הצלחנו להוסיף את כל התמונות");
+    await loadPortfolio();
+  } finally {
+    setSavingGalleryImages(false);
+  }
+};
+
+  // ==========================================
+  // מחיקת תמונה בודדת
+  // ==========================================
+
+  const deleteImage = async (
+    image: PortfolioImage
+  ) => {
+    const confirmed = window.confirm(
+      `למחוק את התמונה "${image.title || "ללא כותרת"}"?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(
+        "/api/portfolio",
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "image",
+            id: image.id,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error || "שגיאה במחיקת התמונה"
+        );
+      }
+
+      showMessage("התמונה נמחקה בהצלחה", "success");
+      await loadPortfolio();
+    } catch (error) {
+      showMessage(
+        error instanceof Error
+          ? error.message
+          : "שגיאה במחיקת התמונה",
+        "error"
+      );
+    }
+  };
+  
   // ==========================================
   // מספר תמונות
   // ==========================================
@@ -1789,6 +1900,30 @@ export default function AdminPortfolioPage() {
                             mt-5
                           "
                         >
+{/* ניהול גלריה */}
+
+<button
+  type="button"
+  onClick={() => setManagingCategory(category)}
+  className="
+    mt-3
+    mr-2
+    text-[#D4AF37]
+    border
+    border-[#D4AF37]/40
+    bg-[#D4AF37]/10
+    hover:bg-[#D4AF37]
+    hover:text-black
+    px-3
+    py-2
+    rounded-lg
+    text-sm
+    font-semibold
+    transition
+  "
+>
+  🖼️ ניהול תמונות
+</button>
 
                           <span
                             className="
@@ -1851,21 +1986,27 @@ export default function AdminPortfolioPage() {
                                   "
                                 >
 
-                                  <img
-                                    src={
-                                      image.url
-                                    }
-                                    alt={
-                                      image.alt ||
-                                      image.title ||
-                                      category.name
-                                    }
-                                    className="
-                                      w-full
-                                      h-full
-                                      object-cover
-                                    "
-                                  />
+                                 <div className="relative w-full h-full group">
+  <img
+    src={image.url}
+    alt={
+      image.alt ||
+      image.title ||
+      category.name
+    }
+    className="w-full h-full object-cover"
+  />
+
+  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+    <button
+      type="button"
+      onClick={() => deleteImage(image)}
+      className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-semibold"
+    >
+      🗑️ מחק תמונה
+    </button>
+  </div>
+</div>
 
                                 </div>
 
@@ -2024,6 +2165,95 @@ export default function AdminPortfolioPage() {
         </section>
 
       </div>
+      {/* חלון ניהול תמונות */}
+{managingCategory && (
+  <div className="fixed inset-0 z-[9999] flex items-start justify-center bg-black/80 px-4 pt-28 pb-6">
+    <div className="w-full max-w-5xl max-h-[calc(100vh-150px)] overflow-y-auto rounded-2xl border border-[#D4AF37]/40 bg-[#111] p-6">
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <h2 className="text-2xl font-bold text-[#D4AF37]">
+          ניהול תמונות — {managingCategory.name}
+        </h2>
+
+        <button
+          type="button"
+          onClick={() => {
+            setManagingCategory(null);
+            setNewGalleryFiles(null);
+          }}
+          className="rounded-lg border border-gray-700 px-4 py-2 text-white hover:bg-gray-800"
+        >
+          ✕ סגור
+        </button>
+      </div>
+
+      <div className="mb-6 rounded-xl border border-[#292929] bg-[#090909] p-4">
+        <label className="mb-3 block font-semibold">
+          הוספת תמונות מהמחשב
+        </label>
+
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={(e) =>
+            setNewGalleryFiles(e.target.files)
+          }
+          className="block w-full text-sm text-gray-300"
+        />
+
+        <button
+          type="button"
+          onClick={addImagesToGallery}
+          disabled={savingGalleryImages || !newGalleryFiles?.length}
+          className="mt-4 rounded-xl bg-[#D4AF37] px-5 py-3 font-bold text-black disabled:opacity-50"
+        >
+          {savingGalleryImages
+            ? "מעלה תמונות..."
+            : `הוסף ${newGalleryFiles?.length || 0} תמונות`}
+        </button>
+      </div>
+
+      <h3 className="mb-4 text-lg font-bold">
+        התמונות בקטגוריה ({managingCategory.images.length})
+      </h3>
+
+      {managingCategory.images.length === 0 ? (
+        <p className="py-8 text-center text-gray-500">
+          עדיין אין תמונות בקטגוריה הזאת.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+          {managingCategory.images.map((image) => (
+            <div
+              key={image.id}
+              className="overflow-hidden rounded-xl border border-[#292929] bg-[#090909]"
+            >
+              <img
+                src={image.url}
+                alt={image.alt || image.title || ""}
+                className="h-40 w-full object-cover"
+              />
+
+              <div className="p-3">
+                <p className="mb-3 break-words text-sm text-gray-300">
+                  {image.title || "ללא כותרת"}
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => deleteImage(image)}
+                  className="w-full rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-400 hover:bg-red-600 hover:text-white"
+                >
+                  🗑️ מחק תמונה
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+)}
     </main>
   );
 }

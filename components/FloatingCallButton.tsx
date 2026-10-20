@@ -5,12 +5,14 @@ import { Phone } from "lucide-react";
 export default function FloatingCallButton() {
   return (
     <a
- className="
-  fixed
-  left-5
-  bottom-5
-  z-[9998]
-  md:hidden
+      href="tel:0528913271"
+      aria-label="התקשרו אלינו"
+      className="
+        fixed
+        left-5
+        bottom-5
+        z-[9998]
+        md:hidden
         w-16
         h-16
         rounded-full
@@ -27,10 +29,7 @@ export default function FloatingCallButton() {
         active:scale-95
       "
     >
-      <Phone
-        size={28}
-        strokeWidth={2.5}
-      />
+      <Phone size={28} strokeWidth={2.5} />
 
       <span
         className="
@@ -41,6 +40,7 @@ export default function FloatingCallButton() {
           border-[#D4AF37]
           animate-ping
           opacity-30
+          pointer-events-none
         "
       />
     </a>
