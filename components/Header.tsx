@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { User, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -37,6 +38,7 @@ export default function Header() {
       >
         <div
           className="
+            relative
             max-w-7xl
             mx-auto
             flex
@@ -82,7 +84,48 @@ export default function Header() {
           >
             <User size={19} />
           </Link>
-          {/* תפריט מחשב - נשאר באותו סדר */}
+          {/* לוגו Maestro Events */}
+          <Link
+            href="/"
+            onClick={(e) => {
+              closeMobileMenu();
+              if (pathname === "/") {
+                e.preventDefault();
+                window.scrollTo({
+                  top: 0,
+                  behavior: "smooth",
+                });
+              }
+            }}
+            aria-label="Maestro Events - דף הבית"
+            className="
+              absolute
+              left-1/2
+              -translate-x-1/2
+              z-[5001]
+              flex
+              items-center
+              justify-center
+            "
+          >
+            <Image
+              src="/M%20logo%20yellow-01.png"
+              alt="Maestro Events"
+              width={64}
+              height={64}
+              priority
+              className="
+                h-10
+                w-10
+                sm:h-12
+                sm:w-12
+                md:h-14
+                md:w-14
+                object-contain
+              "
+            />
+          </Link>
+          {/* תפריט מחשב */}
           <nav className="hidden lg:block">
             <ul className="flex items-center gap-2 xl:gap-3">
               {menuItems.map((item) => {
@@ -255,7 +298,7 @@ export default function Header() {
                 <X size={21} />
               </button>
             </div>
-            {/* קישורים - סדר הפוך במובייל בלבד */}
+            {/* קישורים - סדר הפוך במובייל */}
             <nav className="flex-1 overflow-y-auto px-4 py-4">
               <ul className="flex flex-col-reverse gap-1.5">
                 {menuItems.map((item) => {
