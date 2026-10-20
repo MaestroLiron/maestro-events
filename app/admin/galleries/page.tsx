@@ -418,134 +418,103 @@ export default function GalleriesPage() {
   // העלאת קבצים
   // ==========================================
 
-  async function uploadFiles(
-    files: FileList | File[]
-  ) {
-    if (!galleryToEdit) {
+async function uploadFiles(files: FileList | File[]) {
+    if (!galleryToEdit || uploading) {
       return;
     }
 
-    const selectedFiles =
-      Array.from(files).filter(
-        (file) =>
-          file.type.startsWith(
-            "image/"
-          )
-      );
+    const selectedFiles = Array.from(files).filter((file) =>
+      file.type.startsWith("image/") ||
+      /\.(jpe?g|png|webp|gif|avif|bmp|heic|heif)$/i.test(file.name)
+    );
 
-    if (
-      selectedFiles.length === 0
-    ) {
-      alert(
-        "לא נמצאו קבצי תמונה"
-      );
+    if (selectedFiles.length === 0) {
+      alert("לא נמצאו קבצי תמונה");
       return;
     }
+
+    setUploading(true);
+
+    let uploaded = 0;
+    const failed: string[] = [];
 
     try {
-      setUploading(true);
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
 
-      setUploadProgress(
-        `מעלה ${selectedFiles.length} תמונות...`
-      );
+        setUploadProgress(
+          `מעלה תמונה ${i + 1} מתוך ${selectedFiles.length}: ${file.name}`
+        );
 
-      const formData =
-        new FormData();
+        try {
+          const formData = new FormData();
+          formData.append("galleryId", String(galleryToEdit.id));
+          formData.append("files", file);
 
-      formData.append(
-        "galleryId",
-        String(
-          galleryToEdit.id
-        )
-      );
-
-      selectedFiles.forEach(
-        (file) => {
-          formData.append(
-            "files",
-            file
-          );
-        }
-      );
-
-      const response =
-        await fetch(
-          "/api/galleries",
-          {
+          const response = await fetch("/api/galleries", {
             method: "POST",
             body: formData,
+          });
+
+          const data = await response.json().catch(() => ({}));
+
+          if (!response.ok) {
+            throw new Error(
+              data.error || `שגיאת שרת (${response.status})`
+            );
           }
-        );
 
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        alert(
-          data.error ||
-            "שגיאה בהעלאת התמונות"
-        );
-
-        return;
+          uploaded += Number(data.uploaded ?? 1);
+        } catch (error) {
+          console.error(`Upload failed: ${file.name}`, error);
+          failed.push(file.name);
+        }
       }
-
-      setUploadProgress(
-        `הועלו בהצלחה ${data.uploaded} תמונות`
-      );
 
       await loadGalleries();
 
-      // לעדכן את הגלריה בחלון
-      const updated =
-        await fetch(
-          "/api/galleries",
-          {
-            cache: "no-store",
-          }
-        );
+      const updated = await fetch("/api/galleries", {
+        cache: "no-store",
+      });
 
       if (updated.ok) {
-        const all =
-          await updated.json();
-
-        const found =
-          all.find(
-            (item: Gallery) =>
-              item.id ===
-              galleryToEdit.id
-          );
+        const all = await updated.json();
+        const found = all.find(
+          (item: Gallery) => item.id === galleryToEdit.id
+        );
 
         if (found) {
-          setGalleryToEdit(
-            found
-          );
+          setGalleryToEdit(found);
         }
       }
 
-      setTimeout(() => {
-        setUploadProgress("");
-      }, 3000);
+      if (failed.length === 0) {
+        setUploadProgress(
+          `הועלו בהצלחה ${uploaded} מתוך ${selectedFiles.length} תמונות`
+        );
+      } else {
+        setUploadProgress(
+          `הועלו ${uploaded} תמונות; ${failed.length} נכשלו`
+        );
+
+        alert(
+          `הועלו ${uploaded} תמונות מתוך ${selectedFiles.length}.\n` +
+          `נכשלו ${failed.length} תמונות.\n` +
+          `קבצים שנכשלו:\n${failed.slice(0, 10).join("\n")}`
+        );
+      }
     } catch (error) {
       console.error(error);
-
-      alert(
-        "שגיאה בהעלאת התמונות"
-      );
+      alert("אירעה שגיאה במהלך העלאת התמונות או רענון הגלריה.");
     } finally {
       setUploading(false);
 
-      if (
-        fileInputRef.current
-      ) {
-        fileInputRef.current.value =
-          "";
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
       }
 
-      if (
-        folderInputRef.current
-      ) {
-        folderInputRef.current.value =
-          "";
+      if (folderInputRef.current) {
+        folderInputRef.current.value = "";
       }
     }
   }
