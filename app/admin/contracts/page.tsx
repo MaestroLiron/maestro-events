@@ -1006,7 +1006,7 @@ typeof window ===
 return "";
 }
 
-return `https://maestro-events.co.il/admin/contracts/${contract.publicToken}`;
+return `https://maestro-events.co.il/contract/${encodeURIComponent(contract.publicToken)}`;
 }
 
 // =====================================================
