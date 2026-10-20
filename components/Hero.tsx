@@ -20,7 +20,7 @@ export default function Hero() {
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-5 py-8 text-center md:px-6">
         {/* לוגו */}
         <Image
-          src="/weare.png"
+          src="/WEARE.png"
           alt="We Are Maestro"
           width={700}
           height={400}
