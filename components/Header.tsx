@@ -1,10 +1,12 @@
 "use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { User, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import activeSectionHook from "../hooks/useActiveSection";
+
 const menuItems = [
   { name: "צור קשר", href: "/#contact" },
   { name: "אודות", href: "/#about" },
@@ -14,13 +16,26 @@ const menuItems = [
   { name: "השירותים שלנו", href: "/#services" },
   { name: "דף הבית", href: "/" },
 ];
+
 export default function Header() {
   const pathname = usePathname();
   const activeSection = activeSectionHook();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
   };
+
+  const scrollToTop = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (pathname === "/") {
+      e.preventDefault();
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }
+  };
+
   return (
     <>
       <header
@@ -38,12 +53,12 @@ export default function Header() {
       >
         <div
           className="
-            relative
             max-w-7xl
             mx-auto
             flex
             items-center
             justify-between
+            gap-3
             px-4
             sm:px-6
             md:px-8
@@ -59,6 +74,7 @@ export default function Header() {
             className={`
               relative
               z-[5001]
+              shrink-0
               w-10
               h-10
               sm:w-11
@@ -84,47 +100,7 @@ export default function Header() {
           >
             <User size={19} />
           </Link>
-          {/* לוגו Maestro Events */}
-          <Link
-            href="/"
-            onClick={(e) => {
-              closeMobileMenu();
-              if (pathname === "/") {
-                e.preventDefault();
-                window.scrollTo({
-                  top: 0,
-                  behavior: "smooth",
-                });
-              }
-            }}
-            aria-label="Maestro Events - דף הבית"
-            className="
-              absolute
-              left-1/2
-              -translate-x-1/2
-              z-[5001]
-              flex
-              items-center
-              justify-center
-            "
-          >
-            <Image
-              src="/M%20logo%20yellow-01.png"
-              alt="Maestro Events"
-              width={64}
-              height={64}
-              priority
-              className="
-                h-10
-                w-10
-                sm:h-12
-                sm:w-12
-                md:h-14
-                md:w-14
-                object-contain
-              "
-            />
-          </Link>
+
           {/* תפריט מחשב */}
           <nav className="hidden lg:block">
             <ul className="flex items-center gap-2 xl:gap-3">
@@ -133,9 +109,11 @@ export default function Header() {
                   item.href === "/"
                     ? "home"
                     : item.href.replace("/#", "");
+
                 const isActive =
                   pathname === "/" &&
                   activeSection === sectionId;
+
                 return (
                   <li key={item.name}>
                     <Link
@@ -178,6 +156,45 @@ export default function Header() {
               })}
             </ul>
           </nav>
+
+          {/* לוגו בסרגל העליון, בצד שמאל */}
+          <Link
+            href="/"
+            onClick={(e) => {
+              closeMobileMenu();
+              scrollToTop(e);
+            }}
+            aria-label="Maestro Events - דף הבית"
+            className="
+              relative
+              z-[5001]
+              flex
+              shrink-0
+              items-center
+              justify-center
+              mr-auto
+              lg:mr-0
+              lg:ml-4
+            "
+          >
+            <Image
+              src="/M%20logo%20yellow-01.png"
+              alt="Maestro Events"
+              width={64}
+              height={64}
+              priority
+              className="
+                h-10
+                w-10
+                sm:h-12
+                sm:w-12
+                md:h-14
+                md:w-14
+                object-contain
+              "
+            />
+          </Link>
+
           {/* כפתור פתיחת תפריט מובייל */}
           <button
             type="button"
@@ -186,6 +203,7 @@ export default function Header() {
               relative
               z-[5001]
               lg:hidden
+              shrink-0
               w-10
               h-10
               sm:w-11
@@ -208,9 +226,9 @@ export default function Header() {
           >
             <Menu size={23} />
           </button>
-          <div className="hidden lg:block w-10 xl:w-12" />
         </div>
       </header>
+
       {/* תפריט מובייל */}
       {mobileMenuOpen && (
         <div
@@ -233,6 +251,7 @@ export default function Header() {
               backdrop-blur-sm
             "
           />
+
           {/* חלונית התפריט */}
           <aside
             dir="rtl"
@@ -276,6 +295,7 @@ export default function Header() {
                   EVENTS
                 </div>
               </div>
+
               <button
                 type="button"
                 onClick={closeMobileMenu}
@@ -298,7 +318,8 @@ export default function Header() {
                 <X size={21} />
               </button>
             </div>
-            {/* קישורים - סדר הפוך במובייל */}
+
+            {/* קישורים */}
             <nav className="flex-1 overflow-y-auto px-4 py-4">
               <ul className="flex flex-col-reverse gap-1.5">
                 {menuItems.map((item) => {
@@ -306,9 +327,11 @@ export default function Header() {
                     item.href === "/"
                       ? "home"
                       : item.href.replace("/#", "");
+
                   const isActive =
                     pathname === "/" &&
                     activeSection === sectionId;
+
                   return (
                     <li key={item.name}>
                       <Link
@@ -352,6 +375,7 @@ export default function Header() {
                 })}
               </ul>
             </nav>
+
             {/* תחתית התפריט */}
             <div
               className="
