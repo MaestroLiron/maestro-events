@@ -9,25 +9,15 @@ import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// ==========================================
-// Prisma
-// ==========================================
-
 const adapter = new PrismaBetterSqlite3({
   url: process.env.DATABASE_URL || "file:./dev.db",
 });
 
 const prisma = new PrismaClient({ adapter });
 
-// ==========================================
-// GET - הורדת כל הגלריה
-// ==========================================
-
 export async function GET(
-  request: Request,
-  context: {
-    params: Promise<{ slug: string }>;
-  }
+  _request: Request,
+  context: { params: Promise<{ slug: string }> }
 ) {
   try {
     const { slug } = await context.params;
@@ -39,7 +29,6 @@ export async function GET(
       );
     }
 
-    // מציאת הגלריה והתמונות הפעילות
     const gallery = await prisma.clientGallery.findUnique({
       where: { slug },
       include: {
@@ -86,147 +75,96 @@ export async function GET(
       );
     }
 
-    const zip = new JSZip();
     const publicDir = path.resolve(process.cwd(), "public");
-    const requestUrl = new URL(request.url);
-
+    const zip = new JSZip();
     let addedImages = 0;
     const failedImages: string[] = [];
 
-    // ========================================
-    // קריאת התמונות והוספתן ל-ZIP
-    // ========================================
-
-    for (let index = 0; index < gallery.images.length; index++) {
-      const image = gallery.images[index];
+    for (let i = 0; i < gallery.images.length; i++) {
+      const image = gallery.images[i];
 
       try {
-        let imageBuffer: Buffer;
-        const rawUrl = image.url.trim();
+        const urlPath = image.url.split(/[?#]/)[0];
 
-        if (!rawUrl) {
-          throw new Error("כתובת התמונה ריקה");
+        if (!urlPath.startsWith("/uploads/galleries/")) {
+          throw new Error("נתיב תמונה לא תקין");
         }
 
-        // כתובת יחסית, או כתובת מלאה של האתר שלנו:
-        // מנסים לקרוא את הקובץ ישירות מהשרת.
-        let localPath: string | null = null;
+        const decodedPath = decodeURIComponent(urlPath);
+        const filePath = path.resolve(
+          publicDir,
+          "." + decodedPath
+        );
 
-        if (rawUrl.startsWith("/")) {
-          localPath = rawUrl.split("?")[0].split("#")[0];
-        } else {
-          const parsedUrl = new URL(rawUrl);
-
-          if (parsedUrl.origin === requestUrl.origin) {
-            localPath = parsedUrl.pathname;
-          }
+        if (!filePath.startsWith(publicDir + path.sep)) {
+          throw new Error("נתיב מחוץ לתיקיית התמונות");
         }
 
-        if (localPath !== null) {
-          const decodedPath = decodeURIComponent(localPath);
-          const filePath = path.resolve(
-            publicDir,
-            `.${decodedPath}`
-          );
+        const buffer = await readFile(filePath);
 
-          // מונע קריאה של קבצים מחוץ לתיקיית public.
-          if (!filePath.startsWith(publicDir + path.sep)) {
-            throw new Error("נתיב התמונה נמצא מחוץ לתיקיית public");
-          }
-
-          imageBuffer = await readFile(filePath);
-        } else {
-          // כתובת חיצונית: הורדה דרך HTTP.
-          const response = await fetch(rawUrl);
-
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
-
-          imageBuffer = Buffer.from(await response.arrayBuffer());
+        if (!buffer.length) {
+          throw new Error("קובץ ריק");
         }
 
-        if (imageBuffer.length === 0) {
-          throw new Error("קובץ התמונה ריק");
-        }
+        let fileName = path.basename(
+          image.fileName || `photo-${i + 1}.jpg`
+        );
 
-        // יצירת שם קובץ בטוח וייחודי.
-        let fileName =
-          image.fileName || `photo-${index + 1}.jpg`;
-
-        fileName = path
-          .basename(fileName)
+        fileName = fileName
           .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
           .trim();
 
         if (!fileName || fileName === "." || fileName === "..") {
-          fileName = `photo-${index + 1}.jpg`;
+          fileName = `photo-${i + 1}.jpg`;
         }
 
-        zip.file(`${index + 1}-${fileName}`, imageBuffer);
+        zip.file(`${i + 1}-${fileName}`, buffer);
         addedImages++;
-      } catch (imageError) {
-        failedImages.push(image.url);
-
+      } catch (error) {
         console.error(
-          "שגיאה בהוספת תמונה ל-ZIP:",
+          "Gallery ZIP image error:",
           image.url,
-          imageError
+          error
         );
+        failedImages.push(image.url);
       }
     }
 
-    // לא שולחים קובץ ZIP ריק.
     if (addedImages === 0) {
       return NextResponse.json(
         {
-          error:
-            "לא ניתן לקרוא אף תמונה. יש לבדוק את נתיבי התמונות ואת מיקום הקבצים בשרת.",
+          error: "לא נמצאו קובצי תמונות לקריאה בשרת",
           totalImages: gallery.images.length,
-          addedImages,
           failedImages: failedImages.length,
         },
         { status: 500 }
       );
     }
 
-    // יצירת קובץ ZIP.
     const zipBuffer = await zip.generateAsync({
       type: "nodebuffer",
       compression: "DEFLATE",
       compressionOptions: { level: 6 },
     });
 
-    if (zipBuffer.length === 0) {
-      return NextResponse.json(
-        { error: "יצירת קובץ ה-ZIP נכשלה" },
-        { status: 500 }
-      );
-    }
-
-    let galleryName = (gallery.name || "Maestro Gallery")
+    const safeGalleryName = (gallery.name || "Maestro Gallery")
       .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
       .trim();
 
-    if (!galleryName) {
-      galleryName = "Maestro Gallery";
-    }
-
-    const encodedName = encodeURIComponent(`${galleryName}.zip`);
-
-   return new NextResponse(new Uint8Array(zipBuffer), {
+    return new NextResponse(new Uint8Array(zipBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/zip",
         "Content-Disposition":
-          `attachment; filename="maestro-gallery.zip"; filename*=UTF-8''${encodedName}`,
+          `attachment; filename="maestro-gallery.zip"; filename*=UTF-8''${encodeURIComponent(
+            (safeGalleryName || "Maestro Gallery") + ".zip"
+          )}`,
         "Content-Length": String(zipBuffer.length),
-        "Cache-Control": "no-store, no-cache, must-revalidate",
-        Pragma: "no-cache",
+        "Cache-Control": "no-store",
       },
     });
   } catch (error) {
-    console.error("DOWNLOAD ALL GALLERY ERROR:", error);
+    console.error("DOWNLOAD GALLERY ERROR:", error);
 
     return NextResponse.json(
       { error: "אירעה שגיאה בהכנת הורדת הגלריה" },
