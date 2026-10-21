@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import JSZip from "jszip";
+import { readFile } from "fs/promises";
+import path from "path";
 
 import { PrismaClient } from "../../../../../generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 // ==========================================
 // Prisma
@@ -12,9 +17,7 @@ const adapter = new PrismaBetterSqlite3({
   url: process.env.DATABASE_URL || "file:./dev.db",
 });
 
-const prisma = new PrismaClient({
-  adapter,
-});
+const prisma = new PrismaClient({ adapter });
 
 // ==========================================
 // GET - הורדת כל הגלריה
@@ -23,281 +26,211 @@ const prisma = new PrismaClient({
 export async function GET(
   request: Request,
   context: {
-    params: Promise<{
-      slug: string;
-    }>;
+    params: Promise<{ slug: string }>;
   }
 ) {
   try {
-    // ========================================
-    // קבלת slug
-    // ========================================
-
     const { slug } = await context.params;
 
     if (!slug) {
       return NextResponse.json(
-        {
-          error: "קישור גלריה לא תקין",
-        },
-        {
-          status: 400,
-        }
+        { error: "קישור גלריה לא תקין" },
+        { status: 400 }
       );
     }
 
-    // ========================================
-    // מציאת הגלריה
-    // ========================================
-
-    const gallery =
-      await prisma.clientGallery.findUnique({
-        where: {
-          slug: slug,
-        },
-        include: {
-          images: {
-            where: {
-              isActive: true,
-            },
-            orderBy: {
-              sortOrder: "asc",
-            },
-            select: {
-              id: true,
-              url: true,
-              fileName: true,
-            },
+    // מציאת הגלריה והתמונות הפעילות
+    const gallery = await prisma.clientGallery.findUnique({
+      where: { slug },
+      include: {
+        images: {
+          where: { isActive: true },
+          orderBy: { sortOrder: "asc" },
+          select: {
+            id: true,
+            url: true,
+            fileName: true,
           },
         },
-      });
+      },
+    });
 
     if (!gallery) {
       return NextResponse.json(
-        {
-          error: "הגלריה לא נמצאה",
-        },
-        {
-          status: 404,
-        }
+        { error: "הגלריה לא נמצאה" },
+        { status: 404 }
       );
     }
-
-    // ========================================
-    // בדיקת פעילות
-    // ========================================
 
     if (!gallery.isActive) {
       return NextResponse.json(
-        {
-          error: "הגלריה אינה פעילה",
-        },
-        {
-          status: 403,
-        }
+        { error: "הגלריה אינה פעילה" },
+        { status: 403 }
       );
     }
-
-    // ========================================
-    // בדיקת תוקף
-    // ========================================
 
     if (
       gallery.expiresAt &&
-      new Date(gallery.expiresAt).getTime() <
-        Date.now()
+      new Date(gallery.expiresAt).getTime() < Date.now()
     ) {
       return NextResponse.json(
-        {
-          error: "תוקף הגלריה הסתיים",
-        },
-        {
-          status: 403,
-        }
+        { error: "תוקף הגלריה הסתיים" },
+        { status: 403 }
       );
     }
-
-    // ========================================
-    // בדיקה שיש תמונות
-    // ========================================
 
     if (gallery.images.length === 0) {
       return NextResponse.json(
-        {
-          error: "אין תמונות להורדה",
-        },
-        {
-          status: 400,
-        }
+        { error: "אין תמונות פעילות להורדה" },
+        { status: 400 }
       );
     }
 
-    // ========================================
-    // יצירת ZIP
-    // ========================================
-
     const zip = new JSZip();
-
-    // ========================================
-    // כתובת האתר
-    // ========================================
-
+    const publicDir = path.resolve(process.cwd(), "public");
     const requestUrl = new URL(request.url);
 
-    const origin = requestUrl.origin;
+    let addedImages = 0;
+    const failedImages: string[] = [];
 
     // ========================================
-    // הורדת התמונות
+    // קריאת התמונות והוספתן ל-ZIP
     // ========================================
 
-    for (
-      let index = 0;
-      index < gallery.images.length;
-      index++
-    ) {
+    for (let index = 0; index < gallery.images.length; index++) {
       const image = gallery.images[index];
 
       try {
-        let imageUrl = image.url;
+        let imageBuffer: Buffer;
+        const rawUrl = image.url.trim();
 
-        // אם מדובר בנתיב מקומי
-        if (imageUrl.startsWith("/")) {
-          imageUrl = `${origin}${imageUrl}`;
+        if (!rawUrl) {
+          throw new Error("כתובת התמונה ריקה");
         }
 
-        const response = await fetch(imageUrl);
+        // כתובת יחסית, או כתובת מלאה של האתר שלנו:
+        // מנסים לקרוא את הקובץ ישירות מהשרת.
+        let localPath: string | null = null;
 
-        if (!response.ok) {
-          console.error(
-            "לא ניתן להוריד תמונה:",
-            imageUrl
+        if (rawUrl.startsWith("/")) {
+          localPath = rawUrl.split("?")[0].split("#")[0];
+        } else {
+          const parsedUrl = new URL(rawUrl);
+
+          if (parsedUrl.origin === requestUrl.origin) {
+            localPath = parsedUrl.pathname;
+          }
+        }
+
+        if (localPath !== null) {
+          const decodedPath = decodeURIComponent(localPath);
+          const filePath = path.resolve(
+            publicDir,
+            `.${decodedPath}`
           );
 
-          continue;
+          // מונע קריאה של קבצים מחוץ לתיקיית public.
+          if (!filePath.startsWith(publicDir + path.sep)) {
+            throw new Error("נתיב התמונה נמצא מחוץ לתיקיית public");
+          }
+
+          imageBuffer = await readFile(filePath);
+        } else {
+          // כתובת חיצונית: הורדה דרך HTTP.
+          const response = await fetch(rawUrl);
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          imageBuffer = Buffer.from(await response.arrayBuffer());
         }
 
-        const imageBuffer =
-          await response.arrayBuffer();
+        if (imageBuffer.length === 0) {
+          throw new Error("קובץ התמונה ריק");
+        }
 
-        // ======================================
-        // שם הקובץ
-        // ======================================
-
+        // יצירת שם קובץ בטוח וייחודי.
         let fileName =
-          image.fileName ||
-          `photo-${index + 1}.jpg`;
+          image.fileName || `photo-${index + 1}.jpg`;
 
-        fileName = fileName.replace(
-          /[<>:"/\\|?*\x00-\x1F]/g,
-          "_"
-        );
+        fileName = path
+          .basename(fileName)
+          .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
+          .trim();
 
-        fileName =
-          `${index + 1}-${fileName}`;
+        if (!fileName || fileName === "." || fileName === "..") {
+          fileName = `photo-${index + 1}.jpg`;
+        }
 
-        // ======================================
-        // הוספת התמונה ל-ZIP
-        // ======================================
-
-        zip.file(
-          fileName,
-          imageBuffer
-        );
+        zip.file(`${index + 1}-${fileName}`, imageBuffer);
+        addedImages++;
       } catch (imageError) {
+        failedImages.push(image.url);
+
         console.error(
-          "שגיאה בהורדת תמונה:",
+          "שגיאה בהוספת תמונה ל-ZIP:",
           image.url,
           imageError
         );
       }
     }
 
-    // ========================================
-    // יצירת ZIP כ-ArrayBuffer
-    // ========================================
-
-    const zipBuffer =
-      await zip.generateAsync({
-        type: "arraybuffer",
-        compression: "DEFLATE",
-        compressionOptions: {
-          level: 6,
-        },
-      });
-
-    // ========================================
-    // בדיקה שהקובץ לא ריק
-    // ========================================
-
-    if (zipBuffer.byteLength === 0) {
+    // לא שולחים קובץ ZIP ריק.
+    if (addedImages === 0) {
       return NextResponse.json(
         {
           error:
-            "לא הצלחנו להכין את התמונות להורדה",
+            "לא ניתן לקרוא אף תמונה. יש לבדוק את נתיבי התמונות ואת מיקום הקבצים בשרת.",
+          totalImages: gallery.images.length,
+          addedImages,
+          failedImages: failedImages.length,
         },
-        {
-          status: 500,
-        }
+        { status: 500 }
       );
     }
 
-    // ========================================
-    // שם הגלריה
-    // ========================================
+    // יצירת קובץ ZIP.
+    const zipBuffer = await zip.generateAsync({
+      type: "nodebuffer",
+      compression: "DEFLATE",
+      compressionOptions: { level: 6 },
+    });
 
-    let galleryName =
-      gallery.name || "Maestro Gallery";
+    if (zipBuffer.length === 0) {
+      return NextResponse.json(
+        { error: "יצירת קובץ ה-ZIP נכשלה" },
+        { status: 500 }
+      );
+    }
 
-    galleryName = galleryName
-      .replace(
-        /[<>:"/\\|?*\x00-\x1F]/g,
-        "_"
-      )
+    let galleryName = (gallery.name || "Maestro Gallery")
+      .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
       .trim();
 
     if (!galleryName) {
       galleryName = "Maestro Gallery";
     }
 
-    // ========================================
-    // החזרת ZIP
-    // ========================================
+    const encodedName = encodeURIComponent(`${galleryName}.zip`);
 
-    return new NextResponse(
-      zipBuffer,
-      {
-        status: 200,
-
-        headers: {
-          "Content-Type":
-            "application/zip",
-
-          "Content-Disposition":
-            `attachment; filename="maestro-gallery.zip"; filename*=UTF-8''${encodeURIComponent(
-              galleryName + ".zip"
-            )}`,
-
-          "Cache-Control":
-            "no-store, no-cache, must-revalidate",
-
-          Pragma: "no-cache",
-        },
-      }
-    );
+   return new NextResponse(new Uint8Array(zipBuffer), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/zip",
+        "Content-Disposition":
+          `attachment; filename="maestro-gallery.zip"; filename*=UTF-8''${encodedName}`,
+        "Content-Length": String(zipBuffer.length),
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+        Pragma: "no-cache",
+      },
+    });
   } catch (error) {
-    console.error(
-      "DOWNLOAD ALL GALLERY ERROR:",
-      error
-    );
+    console.error("DOWNLOAD ALL GALLERY ERROR:", error);
 
     return NextResponse.json(
-      {
-        error:
-          "אירעה שגיאה בהכנת הורדת הגלריה",
-      },
-      {
-        status: 500,
-      }
+      { error: "אירעה שגיאה בהכנת הורדת הגלריה" },
+      { status: 500 }
     );
   }
 }
