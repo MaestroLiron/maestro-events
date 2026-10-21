@@ -233,7 +233,7 @@ export default function Portfolio() {
                   <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 lg:gap-7">
                     {(isAllExpanded
                       ? allImages
-                      : allImages.slice(0, 4)
+                      : allImages.slice(0, 6)
                     ).map((image) => {
                       const imageIndex = allImages.findIndex(
                         (item) => item.id === image.id
