@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import JSZip from "jszip";
 import { readFile } from "fs/promises";
 import path from "path";
 
@@ -31,16 +30,11 @@ export async function GET(
 
     const gallery = await prisma.clientGallery.findUnique({
       where: { slug },
-      include: {
-        images: {
-          where: { isActive: true },
-          orderBy: { sortOrder: "asc" },
-          select: {
-            id: true,
-            url: true,
-            fileName: true,
-          },
-        },
+      select: {
+        name: true,
+        slug: true,
+        isActive: true,
+        expiresAt: true,
       },
     });
 
@@ -68,97 +62,48 @@ export async function GET(
       );
     }
 
-    if (gallery.images.length === 0) {
+    // קובץ ZIP שנשמר מראש בתיקיית storage בשרת
+    const zipPath = path.join(
+      process.cwd(),
+      "storage",
+      "gallery-zips",
+      `${gallery.slug}.zip`
+    );
+
+    let zipBuffer: Buffer;
+
+    try {
+      zipBuffer = await readFile(zipPath);
+    } catch {
       return NextResponse.json(
-        { error: "אין תמונות פעילות להורדה" },
-        { status: 400 }
+        { error: "קובץ ה-ZIP של הגלריה עדיין לא הועלה" },
+        { status: 404 }
       );
     }
 
-    const publicDir = path.resolve(process.cwd(), "public");
-    const zip = new JSZip();
-    let addedImages = 0;
-    const failedImages: string[] = [];
-
-    for (let i = 0; i < gallery.images.length; i++) {
-      const image = gallery.images[i];
-
-      try {
-        const urlPath = image.url.split(/[?#]/)[0];
-
-        if (!urlPath.startsWith("/uploads/galleries/")) {
-          throw new Error("נתיב תמונה לא תקין");
-        }
-
-        const decodedPath = decodeURIComponent(urlPath);
-        const filePath = path.resolve(
-          publicDir,
-          "." + decodedPath
-        );
-
-        if (!filePath.startsWith(publicDir + path.sep)) {
-          throw new Error("נתיב מחוץ לתיקיית התמונות");
-        }
-
-        const buffer = await readFile(filePath);
-
-        if (!buffer.length) {
-          throw new Error("קובץ ריק");
-        }
-
-        let fileName = path.basename(
-          image.fileName || `photo-${i + 1}.jpg`
-        );
-
-        fileName = fileName
-          .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
-          .trim();
-
-        if (!fileName || fileName === "." || fileName === "..") {
-          fileName = `photo-${i + 1}.jpg`;
-        }
-
-        zip.file(`${i + 1}-${fileName}`, buffer);
-        addedImages++;
-      } catch (error) {
-        console.error(
-          "Gallery ZIP image error:",
-          image.url,
-          error
-        );
-        failedImages.push(image.url);
-      }
-    }
-
-    if (addedImages === 0) {
+    if (
+      zipBuffer.length < 4 ||
+      zipBuffer[0] !== 0x50 ||
+      zipBuffer[1] !== 0x4b
+    ) {
       return NextResponse.json(
-        {
-          error: "לא נמצאו קובצי תמונות לקריאה בשרת",
-          totalImages: gallery.images.length,
-          failedImages: failedImages.length,
-        },
+        { error: "קובץ ה-ZIP של הגלריה אינו תקין" },
         { status: 500 }
       );
     }
 
-    const zipBuffer = await zip.generateAsync({
-      type: "nodebuffer",
-      compression: "DEFLATE",
-      compressionOptions: { level: 6 },
-    });
-
-    const safeGalleryName = (gallery.name || "Maestro Gallery")
+    const safeName = (gallery.name || "Maestro Gallery")
       .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
       .trim();
+
+    const downloadName = `${safeName || "Maestro Gallery"}.zip`;
 
     return new NextResponse(new Uint8Array(zipBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/zip",
         "Content-Disposition":
-          `attachment; filename="maestro-gallery.zip"; filename*=UTF-8''${encodeURIComponent(
-            (safeGalleryName || "Maestro Gallery") + ".zip"
-          )}`,
+          `attachment; filename="gallery.zip"; filename*=UTF-8''${encodeURIComponent(downloadName)}`,
         "Content-Length": String(zipBuffer.length),
         "Cache-Control": "no-store",
       },
@@ -167,7 +112,7 @@ export async function GET(
     console.error("DOWNLOAD GALLERY ERROR:", error);
 
     return NextResponse.json(
-      { error: "אירעה שגיאה בהכנת הורדת הגלריה" },
+      { error: "אירעה שגיאה בהורדת הגלריה" },
       { status: 500 }
     );
   }
