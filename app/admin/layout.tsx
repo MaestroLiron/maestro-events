@@ -89,6 +89,12 @@ const menu: MenuItem[] = [
     roles: ["admin", "employee", "viewer"],
   },
   {
+    name: "פופ־אפ",
+    href: "/admin/popup",
+    icon: "📢",
+    roles: ["admin"],
+  },
+  {
     name: "הגדרות",
     href: "/admin/settings",
     icon: "⚙️",
@@ -190,12 +196,18 @@ export default function AdminLayout({
       return;
     }
 
-    // ========================================
     // הגדרות — מנהל בלבד
-    // ========================================
-
     if (
       pathname.startsWith("/admin/settings") &&
+      currentUser.role !== "admin"
+    ) {
+      router.replace("/admin/dashboard");
+      return;
+    }
+
+    // פופ־אפ — מנהל בלבד
+    if (
+      pathname.startsWith("/admin/popup") &&
       currentUser.role !== "admin"
     ) {
       router.replace("/admin/dashboard");
@@ -249,10 +261,6 @@ export default function AdminLayout({
       dir="rtl"
       className="min-h-screen bg-[#090909] text-white"
     >
-      {/* ==========================================
-          סרגל ניהול
-      ========================================== */}
-
       {!isLoginPage && (
         <>
           <header
@@ -269,9 +277,7 @@ export default function AdminLayout({
               shadow-[0_10px_40px_rgba(0,0,0,0.35)]
             "
           >
-            {/* ==========================================
-                שורה עליונה
-            ========================================== */}
+            {/* שורה עליונה */}
 
             <div
               className="
@@ -344,17 +350,9 @@ export default function AdminLayout({
                         </span>
 
                         <span className="text-[11px] text-gray-400">
-                          {currentUser.role ===
-                            "admin" &&
-                            "מנהל"}
-
-                          {currentUser.role ===
-                            "employee" &&
-                            "עובד"}
-
-                          {currentUser.role ===
-                            "viewer" &&
-                            "צפייה בלבד"}
+                          {currentUser.role === "admin" && "מנהל"}
+                          {currentUser.role === "employee" && "עובד"}
+                          {currentUser.role === "viewer" && "צפייה בלבד"}
                         </span>
                       </div>
                     </div>
@@ -422,9 +420,7 @@ export default function AdminLayout({
               </div>
             </div>
 
-            {/* ==========================================
-                תפריט
-            ========================================== */}
+            {/* תפריט */}
 
             <nav
               className="
@@ -441,13 +437,9 @@ export default function AdminLayout({
             >
               {visibleMenu.map((item) => {
                 const active =
-                  item.href ===
-                  "/admin/dashboard"
-                    ? pathname ===
-                      "/admin/dashboard"
-                    : pathname.startsWith(
-                        item.href
-                      );
+                  item.href === "/admin/dashboard"
+                    ? pathname === "/admin/dashboard"
+                    : pathname.startsWith(item.href);
 
                 return (
                   <Link
@@ -501,23 +493,17 @@ export default function AdminLayout({
             </nav>
           </header>
 
-          {/* ==========================================
-              מקום לסרגל הקבוע
-          ========================================== */}
+          {/* מקום לסרגל הקבוע */}
 
           <div className="h-[135px]" />
         </>
       )}
 
-      {/* ==========================================
-          תוכן
-      ========================================== */}
+      {/* תוכן */}
 
       {children}
 
-      {/* ==========================================
-          כפתור חזרה לדאשבורד
-      ========================================== */}
+      {/* כפתור חזרה לדאשבורד */}
 
       {!isLoginPage && !isDashboard && (
         <Link

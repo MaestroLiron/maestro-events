@@ -83,6 +83,7 @@ export default function SettingsPage() {
             שינוי הסיסמה של המשתמש המחובר
           </div>
         </button>
+        
       </div>
 
       {/* תוכן */}
@@ -102,6 +103,7 @@ export default function SettingsPage() {
         {activeSection === "password" && (
           <PasswordSettings />
         )}
+
 
       </div>
     </div>

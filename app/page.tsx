@@ -7,10 +7,12 @@ import About from "../components/About";
 import Contact from "../components/Contact";
 import Footer from "../components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
+import Popup from "../components/Popup";
 
 export default function Home() {
   return (
     <main className="bg-black text-white overflow-x-hidden">
+      <Popup />
       <Hero />
       <Services />
       <Portfolio />
