@@ -3,6 +3,7 @@ import { Heebo } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import FloatingCallButton from "@/components/FloatingCallButton";
+import SitePopup from "@/components/SitePopup";
 
 const heebo = Heebo({
   variable: "--font-heebo",
@@ -41,6 +42,7 @@ export default function RootLayout({
         </main>
 
         <FloatingCallButton />
+        <SitePopup />
       </body>
     </html>
   );
