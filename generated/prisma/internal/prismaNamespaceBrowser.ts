@@ -68,6 +68,7 @@ export const ModelName = {
   Contract: 'Contract',
   User: 'User',
   BusinessSettings: 'BusinessSettings',
+  PopupSettings: 'PopupSettings',
   Quote: 'Quote',
   QuoteItem: 'QuoteItem'
 } as const
@@ -352,6 +353,21 @@ export const BusinessSettingsScalarFieldEnum = {
 } as const
 
 export type BusinessSettingsScalarFieldEnum = (typeof BusinessSettingsScalarFieldEnum)[keyof typeof BusinessSettingsScalarFieldEnum]
+
+
+export const PopupSettingsScalarFieldEnum = {
+  id: 'id',
+  popupEnabled: 'popupEnabled',
+  popupImage: 'popupImage',
+  popupTargetUrl: 'popupTargetUrl',
+  popupButtonText: 'popupButtonText',
+  popupDelay: 'popupDelay',
+  popupFrequency: 'popupFrequency',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PopupSettingsScalarFieldEnum = (typeof PopupSettingsScalarFieldEnum)[keyof typeof PopupSettingsScalarFieldEnum]
 
 
 export const QuoteScalarFieldEnum = {

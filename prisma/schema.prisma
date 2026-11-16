@@ -633,9 +633,21 @@ model BusinessSettings {
 
   // חתימת העסק
   businessSignatureData String?
-
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model PopupSettings {
+  id              Int      @id @default(1)
+  popupEnabled    Boolean  @default(false)
+  popupImage      String?
+  popupTargetUrl  String?  @default("/#contact")
+  popupButtonText String?  @default("להשארת פרטים")
+  popupDelay      Int      @default(1)
+  popupFrequency  String   @default("daily")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 // ==========================================

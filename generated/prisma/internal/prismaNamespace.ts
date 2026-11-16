@@ -414,6 +414,7 @@ export const ModelName = {
   Contract: 'Contract',
   User: 'User',
   BusinessSettings: 'BusinessSettings',
+  PopupSettings: 'PopupSettings',
   Quote: 'Quote',
   QuoteItem: 'QuoteItem'
 } as const
@@ -431,7 +432,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "testimonial" | "client" | "clientService" | "service" | "payment" | "calendarEvent" | "lead" | "portfolioCategory" | "portfolioImage" | "portfolioVideo" | "clientGallery" | "galleryImage" | "galleryDownload" | "contractTemplate" | "contract" | "user" | "businessSettings" | "quote" | "quoteItem"
+    modelProps: "testimonial" | "client" | "clientService" | "service" | "payment" | "calendarEvent" | "lead" | "portfolioCategory" | "portfolioImage" | "portfolioVideo" | "clientGallery" | "galleryImage" | "galleryDownload" | "contractTemplate" | "contract" | "user" | "businessSettings" | "popupSettings" | "quote" | "quoteItem"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1693,6 +1694,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    PopupSettings: {
+      payload: Prisma.$PopupSettingsPayload<ExtArgs>
+      fields: Prisma.PopupSettingsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PopupSettingsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PopupSettingsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PopupSettingsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PopupSettingsPayload>
+        }
+        findFirst: {
+          args: Prisma.PopupSettingsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PopupSettingsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PopupSettingsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PopupSettingsPayload>
+        }
+        findMany: {
+          args: Prisma.PopupSettingsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PopupSettingsPayload>[]
+        }
+        create: {
+          args: Prisma.PopupSettingsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PopupSettingsPayload>
+        }
+        createMany: {
+          args: Prisma.PopupSettingsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PopupSettingsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PopupSettingsPayload>[]
+        }
+        delete: {
+          args: Prisma.PopupSettingsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PopupSettingsPayload>
+        }
+        update: {
+          args: Prisma.PopupSettingsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PopupSettingsPayload>
+        }
+        deleteMany: {
+          args: Prisma.PopupSettingsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PopupSettingsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PopupSettingsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PopupSettingsPayload>[]
+        }
+        upsert: {
+          args: Prisma.PopupSettingsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PopupSettingsPayload>
+        }
+        aggregate: {
+          args: Prisma.PopupSettingsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePopupSettings>
+        }
+        groupBy: {
+          args: Prisma.PopupSettingsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PopupSettingsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PopupSettingsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PopupSettingsCountAggregateOutputType> | number
+        }
+      }
+    }
     Quote: {
       payload: Prisma.$QuotePayload<ExtArgs>
       fields: Prisma.QuoteFieldRefs
@@ -2146,6 +2221,21 @@ export const BusinessSettingsScalarFieldEnum = {
 export type BusinessSettingsScalarFieldEnum = (typeof BusinessSettingsScalarFieldEnum)[keyof typeof BusinessSettingsScalarFieldEnum]
 
 
+export const PopupSettingsScalarFieldEnum = {
+  id: 'id',
+  popupEnabled: 'popupEnabled',
+  popupImage: 'popupImage',
+  popupTargetUrl: 'popupTargetUrl',
+  popupButtonText: 'popupButtonText',
+  popupDelay: 'popupDelay',
+  popupFrequency: 'popupFrequency',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PopupSettingsScalarFieldEnum = (typeof PopupSettingsScalarFieldEnum)[keyof typeof PopupSettingsScalarFieldEnum]
+
+
 export const QuoteScalarFieldEnum = {
   id: 'id',
   quoteNumber: 'quoteNumber',
@@ -2410,6 +2500,7 @@ export type GlobalOmitConfig = {
   contract?: Prisma.ContractOmit
   user?: Prisma.UserOmit
   businessSettings?: Prisma.BusinessSettingsOmit
+  popupSettings?: Prisma.PopupSettingsOmit
   quote?: Prisma.QuoteOmit
   quoteItem?: Prisma.QuoteItemOmit
 }

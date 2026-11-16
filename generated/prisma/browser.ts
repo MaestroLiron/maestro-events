@@ -103,6 +103,11 @@ export type User = Prisma.UserModel
  */
 export type BusinessSettings = Prisma.BusinessSettingsModel
 /**
+ * Model PopupSettings
+ * 
+ */
+export type PopupSettings = Prisma.PopupSettingsModel
+/**
  * Model Quote
  * 
  */
