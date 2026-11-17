@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { notFound } from "next/navigation";
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 
@@ -28,7 +29,6 @@ type ServiceContent = {
 
 // ==========================================
 // תוכן השירותים
-// התמונות מגיעות מהדאשבורד / Prisma
 // ==========================================
 
 const serviceContents: Record<string, ServiceContent> = {
@@ -73,7 +73,7 @@ const serviceContents: Record<string, ServiceContent> = {
 
   fireworks: {
     title: "זיקוקים קרים",
-    subtitle: "זיקוקים בטיחותיים לרגעי השיא של האירוע.",
+    subtitle: "זיקוקים לרגעי השיא של האירוע.",
     description:
       "אפקט מרשים לרגעי השיא באירוע, המוסיף תאורה ואווירה מיוחדת לצילומים ולרגעים הגדולים.",
     features: [
@@ -148,6 +148,25 @@ const serviceContents: Record<string, ServiceContent> = {
       "אטרקציה שמושכת את האורחים",
     ],
   },
+
+  // ==========================================
+  // הצעת נישואין
+  // ==========================================
+
+  "proposal-design": {
+    title: "עיצוב הצעת נישואין",
+    subtitle: "רגע של פעם בחיים – הפקה יוקרתית ומרגשת.",
+    description:
+      "אנחנו הופכים את הרגע המיוחד שלכם לחוויה בלתי נשכחת. עיצוב הצעת נישואין יוקרתי בהתאמה אישית, עם תפאורה מרהיבה, זיקוקים קרים וצילום סטילס מקצועי לתיעוד הרגעים החשובים והמרגשים ביותר בחיים.",
+    features: [
+      "עיצוב הצעת נישואין יוקרתי",
+      "תפאורה רומנטית בהתאמה אישית",
+      "זיקוקים קרים ליצירת אפקט מרהיב",
+      "צילום סטילס מקצועי",
+      "תיעוד רגע הצעת הנישואין",
+      "התאמה אישית לכל זוג",
+    ],
+  },
 };
 
 // ==========================================
@@ -160,37 +179,22 @@ export default async function ServicePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-
   const decodedSlug = decodeURIComponent(slug);
 
   // ==========================================
-  // תוכן מעוצב של השירות
+  // תוכן השירות
   // ==========================================
 
   const content = serviceContents[decodedSlug];
 
   // ==========================================
   // שליפת השירות מהמסד
-  //
-  // קודם מחפשים לפי slug.
-  // אם לא נמצא, מחפשים לפי שם השירות.
   // ==========================================
 
   const service = await prisma.service.findFirst({
     where: {
-      OR: [
-        {
-          slug: decodedSlug,
-        },
-
-        ...(content?.title
-          ? [
-              {
-                title: content.title,
-              },
-            ]
-          : []),
-      ],
+      slug: decodedSlug,
+      isActive: true,
     },
   });
 
@@ -198,84 +202,57 @@ export default async function ServicePage({
   // אם השירות לא קיים
   // ==========================================
 
-  if (!service) {
-    return (
-      <main
-        dir="rtl"
-        className="
-          min-h-screen
-          bg-[#080808]
-          text-white
-          flex
-          items-center
-          justify-center
-          px-6
-        "
-      >
-        <div className="text-center">
-
-          <h1
-            className="
-              text-4xl
-              font-bold
-              text-[#D4AF37]
-              mb-6
-            "
-          >
-            השירות לא נמצא
-          </h1>
-
-          <Link
-            href="/#services"
-            className="
-              inline-flex
-              items-center
-              justify-center
-              px-6
-              py-3
-              rounded-xl
-              border
-              border-[#D4AF37]
-              text-[#D4AF37]
-              hover:bg-[#D4AF37]
-              hover:text-black
-              transition
-            "
-          >
-            חזרה לשירותים
-          </Link>
-
-        </div>
-      </main>
-    );
+  if (!service && !content) {
+    notFound();
   }
 
   // ==========================================
-  // אם אין תוכן מעוצב
-  // משתמשים בנתונים מהמסד
+  // נתוני השירות
   // ==========================================
 
-  const title =
-    content?.title || service.title;
+  const title = service?.title || content?.title || "השירות שלנו";
 
   const subtitle =
-    content?.subtitle ||
-    "שירות מקצועי מבית Maestro Events.";
+    content?.subtitle || "שירות מקצועי מבית Maestro Events.";
 
   const description =
-    content?.description ||
-    service.description ||
-    "שירות מקצועי ואיכותי לאירוע שלכם.";
+    service?.description || content?.description || "שירות מקצועי ואיכותי לאירוע שלכם.";
+
+  // features נשמרים במסד כטקסט JSON
+  let dbFeatures: string[] = [];
+
+  if (service?.features) {
+    try {
+      const parsed =
+        typeof service.features === "string"
+          ? JSON.parse(service.features)
+          : service.features;
+
+      if (Array.isArray(parsed)) {
+        dbFeatures = parsed.filter(
+          (feature): feature is string => typeof feature === "string"
+        );
+      }
+    } catch {
+      dbFeatures = [];
+    }
+  }
 
   const features =
-    content?.features || [];
+    dbFeatures.length > 0
+      ? dbFeatures
+      : content?.features || [];
 
   // ==========================================
-  // בדיקה שיש תמונה
+  // תמונה
+  // עדיפות לתמונה מהדאשבורד
   // ==========================================
 
   const image =
-    service.image || "/services/placeholder.jpg";
+    service?.image?.trim() ||
+    (decodedSlug === "proposal-design"
+      ? "/services/proposal.jpg"
+      : "/services/placeholder.jpg");
 
   // ==========================================
   // RETURN
@@ -291,34 +268,19 @@ export default async function ServicePage({
         overflow-hidden
       "
     >
-
-      {/* ==========================================
-          כפתור חזרה לדף הבית
-      ========================================== */}
+      {/* כפתור חזרה */}
 
       <Link
         href="/"
         aria-label="חזרה לדף הבית"
         className="
-          fixed
-          right-6
-          bottom-6
-          z-50
-          w-14
-          h-14
-          min-w-12
-          min-h-12
-          flex
-          items-center
-          justify-center
-          rounded-full
-          bg-[#D4AF37]
-          text-black
+          fixed right-6 bottom-6 z-50
+          w-14 h-14 min-w-12 min-h-12
+          flex items-center justify-center
+          rounded-full bg-[#D4AF37] text-black
           shadow-[0_0_20px_rgba(212,175,55,0.35)]
-          transition-all
-          duration-300
-          hover:scale-110
-          hover:bg-[#e6c34d]
+          transition-all duration-300
+          hover:scale-110 hover:bg-[#e6c34d]
           hover:shadow-[0_0_30px_rgba(212,175,55,0.55)]
         "
       >
@@ -327,87 +289,56 @@ export default async function ServicePage({
         </span>
       </Link>
 
-      {/* ==========================================
-          תוכן ראשי
-      ========================================== */}
+      {/* תוכן ראשי */}
 
       <section
         className="
           relative
-          pt-24
-          pb-16
-          md:pt-32
-          md:pb-24
+          pt-24 pb-16
+          md:pt-32 md:pb-24
         "
       >
-
         <div className="max-w-7xl mx-auto px-6">
-
           <div
             className="
-              grid
-              grid-cols-1
+              grid grid-cols-1
               lg:grid-cols-[1fr_430px]
-              gap-12
-              lg:gap-16
+              gap-12 lg:gap-16
               items-start
             "
           >
-
-            {/* ======================================
-                אזור טקסט
-            ====================================== */}
+            {/* אזור טקסט */}
 
             <div
               className="
-                order-2
-                lg:order-1
-                flex
-                flex-col
-                items-center
-                text-center
-                w-full
+                order-2 lg:order-1
+                flex flex-col items-center
+                text-center w-full
               "
             >
-
-              {/* כותרת */}
-
               <h1
                 className="
-                  text-5xl
-                  md:text-6xl
-                  lg:text-7xl
-                  font-bold
-                  text-[#D4AF37]
-                  leading-tight
-                  mb-8
+                  text-4xl md:text-6xl lg:text-7xl
+                  font-bold text-[#D4AF37]
+                  leading-tight mb-8
                   drop-shadow-[0_0_18px_rgba(212,175,55,0.18)]
                 "
               >
                 {title}
               </h1>
 
-              {/* ==================================
-                  פס MAESTRO EVENTS
-              ================================== */}
+              {/* פס MAESTRO EVENTS */}
 
               <div
                 className="
-                  w-full
-                  max-w-3xl
-                  flex
-                  items-center
-                  justify-center
-                  gap-4
-                  mb-10
+                  w-full max-w-3xl
+                  flex items-center justify-center
+                  gap-4 mb-10
                 "
               >
-
                 <div
                   className="
-                    h-[2px]
-                    flex-1
-                    max-w-[260px]
+                    h-[2px] flex-1 max-w-[260px]
                     bg-gradient-to-l
                     from-[#D4AF37]/90
                     via-[#D4AF37]/35
@@ -415,197 +346,115 @@ export default async function ServicePage({
                   "
                 />
 
-                <span
-                  className="
-                    text-[#D4AF37]
-                    text-xl
-                    leading-none
-                    shrink-0
-                  "
-                >
+                <span className="text-[#D4AF37] text-xl leading-none shrink-0">
                   ◆
                 </span>
 
                 <span
                   className="
-                    whitespace-nowrap
-                    text-[#D4AF37]
-                    text-sm
-                    md:text-base
-                    font-semibold
-                    tracking-[0.25em]
-                    shrink-0
+                    whitespace-nowrap text-[#D4AF37]
+                    text-sm md:text-base font-semibold
+                    tracking-[0.25em] shrink-0
                   "
                 >
                   MAESTRO EVENTS
                 </span>
 
-                <span
-                  className="
-                    text-[#D4AF37]
-                    text-xl
-                    leading-none
-                    shrink-0
-                  "
-                >
+                <span className="text-[#D4AF37] text-xl leading-none shrink-0">
                   ◆
                 </span>
 
                 <div
                   className="
-                    h-[2px]
-                    flex-1
-                    max-w-[260px]
+                    h-[2px] flex-1 max-w-[260px]
                     bg-gradient-to-r
                     from-[#D4AF37]/90
                     via-[#D4AF37]/35
                     to-transparent
                   "
                 />
-
               </div>
-
-              {/* משפט משנה */}
 
               <h2
                 className="
-                  text-xl
-                  md:text-2xl
-                  lg:text-3xl
-                  font-semibold
-                  text-white
-                  mb-7
-                  max-w-3xl
+                  text-xl md:text-2xl lg:text-3xl
+                  font-semibold text-white
+                  mb-7 max-w-3xl
                 "
               >
                 {subtitle}
               </h2>
 
-              {/* תיאור */}
-
               <p
                 className="
-                  text-white/80
-                  text-base
-                  md:text-lg
-                  leading-8
-                  max-w-3xl
-                  mb-10
+                  text-white/80 text-base md:text-lg
+                  leading-8 max-w-3xl mb-10
                 "
               >
                 {description}
               </p>
 
-              {/* פס הפרדה */}
-
               <div
                 className="
-                  w-full
-                  max-w-3xl
-                  h-px
+                  w-full max-w-3xl h-px
                   bg-gradient-to-r
                   from-transparent
                   via-[#D4AF37]/40
-                  to-transparent
-                  mb-10
+                  to-transparent mb-10
                 "
               />
 
-              {/* ==================================
-                  מה כולל השירות
-              ================================== */}
+              {/* מה כולל השירות */}
 
               {features.length > 0 && (
                 <div className="w-full max-w-2xl">
-
                   <h3
                     className="
-                      text-3xl
-                      md:text-4xl
-                      font-bold
-                      text-white
-                      mb-8
+                      text-3xl md:text-4xl
+                      font-bold text-white mb-8
                     "
                   >
                     מה כולל השירות?
                   </h3>
 
-                  <div
-                    className="
-                      flex
-                      flex-col
-                      items-center
-                      gap-5
-                    "
-                  >
-
-                    {features.map(
-                      (feature, index) => (
-                        <div
-                          key={index}
+                  <div className="flex flex-col items-center gap-5">
+                    {features.map((feature, index) => (
+                      <div
+                        key={index}
+                        className="
+                          flex items-center justify-center
+                          gap-4 text-white/90
+                          text-base md:text-lg
+                        "
+                      >
+                        <span
                           className="
-                            flex
-                            items-center
-                            justify-center
-                            gap-4
-                            text-white/90
-                            text-base
-                            md:text-lg
+                            w-2 h-2 rotate-45
+                            bg-[#D4AF37]
+                            shadow-[0_0_8px_rgba(212,175,55,0.35)]
+                            shrink-0
                           "
-                        >
+                        />
 
-                          <span
-                            className="
-                              w-2
-                              h-2
-                              rotate-45
-                              bg-[#D4AF37]
-                              shadow-[0_0_8px_rgba(212,175,55,0.35)]
-                              shrink-0
-                            "
-                          />
-
-                          <span>
-                            {feature}
-                          </span>
-
-                        </div>
-                      )
-                    )}
-
+                        <span>{feature}</span>
+                      </div>
+                    ))}
                   </div>
-
                 </div>
               )}
 
-              {/* ==================================
-                  כפתור הצעת מחיר
-              ================================== */}
+              {/* כפתור הצעת מחיר */}
 
-              <div
-                className="
-                  w-full
-                  max-w-2xl
-                  mt-12
-                "
-              >
-
+              <div className="w-full max-w-2xl mt-12">
                 <Link
                   href="/#contact"
                   className="
-                    flex
-                    items-center
-                    justify-center
-                    w-full
-                    min-h-[58px]
-                    rounded-xl
-                    bg-[#D4AF37]
-                    text-black
-                    font-semibold
-                    text-base
-                    md:text-lg
-                    transition-all
-                    duration-300
+                    flex items-center justify-center
+                    w-full min-h-[58px]
+                    rounded-xl bg-[#D4AF37]
+                    text-black font-semibold
+                    text-base md:text-lg
+                    transition-all duration-300
                     hover:bg-[#e6c34d]
                     hover:shadow-[0_0_30px_rgba(212,175,55,0.25)]
                     hover:-translate-y-0.5
@@ -613,44 +462,29 @@ export default async function ServicePage({
                 >
                   בקשת הצעת מחיר
                 </Link>
-
               </div>
-
             </div>
 
-            {/* ======================================
-                תמונה
-                מגיעה מהדאשבורד
-            ====================================== */}
+            {/* תמונה מהדאשבורד */}
 
             <div
               className="
-                order-1
-                lg:order-2
-                w-full
-                flex
-                justify-center
-                lg:justify-end
-                lg:self-center
+                order-1 lg:order-2
+                w-full flex justify-center
+                lg:justify-end lg:self-center
                 lg:translate-y-8
               "
             >
-
               <div
                 className="
-                  relative
-                  w-full
-                  max-w-[450px]
-                  aspect-square
-                  overflow-hidden
-                  rounded-3xl
-                  border
+                  relative w-full max-w-[450px]
+                  aspect-square overflow-hidden
+                  rounded-3xl border
                   border-[#D4AF37]/30
                   bg-[#111]
                   shadow-[0_0_40px_rgba(212,175,55,0.08)]
                 "
               >
-
                 <Image
                   src={image}
                   alt={title}
@@ -658,37 +492,26 @@ export default async function ServicePage({
                   priority
                   className="
                     object-cover
-                    transition-transform
-                    duration-700
+                    transition-transform duration-700
                     hover:scale-105
                   "
                   sizes="(max-width: 1024px) 100vw, 430px"
                 />
 
-                {/* שכבת כהות */}
-
                 <div
                   className="
-                    absolute
-                    inset-0
+                    absolute inset-0
                     bg-gradient-to-t
-                    from-black/35
-                    via-transparent
+                    from-black/35 via-transparent
                     to-transparent
                     pointer-events-none
                   "
                 />
-
               </div>
-
             </div>
-
           </div>
-
         </div>
-
       </section>
-
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import SectionTitle from "./SectionTitle";
 import Link from "next/link";
+
 type Service = {
   title: string;
   subtitle: string;
@@ -8,6 +9,7 @@ type Service = {
   image: string;
   features: string[];
 };
+
 type DbService = {
   id: number;
   title: string;
@@ -17,6 +19,7 @@ type DbService = {
   isActive: boolean;
   sortOrder: number;
 };
+
 // ==========================================
 // תוכן השירותים
 // ==========================================
@@ -34,6 +37,7 @@ const services: Record<string, Service> = {
       "תמונות באיכות גבוהה",
     ],
   },
+
   magnets: {
     title: "צילום מגנטים",
     subtitle: "מגנטים באיכות גבוהה והדפסה במקום.",
@@ -47,6 +51,7 @@ const services: Record<string, Service> = {
       "מזכרת לאורחים",
     ],
   },
+
   slow: {
     title: "חבילת סלואו",
     subtitle: "עשן כבד, בועות סבון וקונפטי.",
@@ -60,6 +65,7 @@ const services: Record<string, Service> = {
       "הפעלת האפקטים ברגע המרכזי",
     ],
   },
+
   fireworks: {
     title: "זיקוקים קרים",
     subtitle: "אפקט מרשים לרגעי השיא.",
@@ -73,6 +79,7 @@ const services: Record<string, Service> = {
       "מתאים לצילומים",
     ],
   },
+
   fruits: {
     title: "קיאק פירות",
     subtitle: "עמדת פירות מעוצבת ומרשימה.",
@@ -86,6 +93,7 @@ const services: Record<string, Service> = {
       "מתאים למגוון אירועים",
     ],
   },
+
   balloons: {
     title: "עיצוב בלונים",
     subtitle: "עיצוב בלונים בהתאמה אישית.",
@@ -99,6 +107,7 @@ const services: Record<string, Service> = {
       "התאמה לקונספט האירוע",
     ],
   },
+
   bar: {
     title: "בר אקטיבי",
     subtitle: "בר מקצועי עם אנרגיה וקוקטיילים.",
@@ -112,6 +121,7 @@ const services: Record<string, Service> = {
       "שירות במהלך האירוע",
     ],
   },
+
   glasses: {
     title: "קיר משקפיים",
     subtitle: "עמדת משקפיים צבעונית ומיוחדת.",
@@ -125,6 +135,7 @@ const services: Record<string, Service> = {
       "אטרקציה לאורחים",
     ],
   },
+
   fueling: {
     title: "עמדת תדלוק לרחבה",
     subtitle: "מתדלקים את הרחבה באנרגיה.",
@@ -138,7 +149,26 @@ const services: Record<string, Service> = {
       "אטרקציה לרחבת הריקודים",
     ],
   },
+
+  // ==========================================
+  // שירות חדש - הצעת נישואין
+  // ==========================================
+  "proposal-design": {
+    title: "עיצוב הצעת נישואין",
+    subtitle: "רגע של פעם בחיים – הפקה יוקרתית ומרגשת.",
+    description:
+      "עיצוב הצעת נישואין יוקרתי בהתאמה אישית, כולל זיקוקים קרים, תפאורה מרהיבה וצילום סטילס מקצועי.",
+    image: "/services/proposal-design.jpg",
+    features: [
+      "עיצוב הצעת נישואין יוקרתי",
+      "זיקוקים קרים",
+      "צילום סטילס מקצועי",
+      "תיעוד הרגעים החשובים",
+      "התאמה אישית לכל זוג",
+    ],
+  },
 };
+
 // ==========================================
 // שליפת שירותים מהמסד
 // ==========================================
@@ -150,40 +180,51 @@ async function getDbServices(): Promise<DbService[]> {
         cache: "no-store",
       }
     );
+
     if (!response.ok) {
       return [];
     }
+
     const data = await response.json();
+
     return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("Services load error:", error);
     return [];
   }
 }
+
 // ==========================================
 // SERVICES
 // ==========================================
 export default async function Services() {
   const dbServices = await getDbServices();
+
   const dbBySlug = new Map(
     dbServices.map((service) => [service.slug, service])
   );
+
+  // כל השירותים מוצגים באותה קרוסלה
   const serviceList = Object.entries(services);
+
   return (
     <section
       id="services"
       className="bg-[#090909] py-10 sm:py-16 lg:py-24"
     >
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+
         <SectionTitle
           title="השירותים שלנו"
           subtitle="כל מה שצריך כדי להפוך את האירוע שלכם לבלתי נשכח"
         />
+
         {/* ==========================================
-            מובייל: קרוסלה אופקית
+            מובייל: קרוסלה אופקית לכל השירותים
             טאבלט: שתי עמודות
             מחשב: שלוש עמודות
         ========================================== */}
+
         <div
           dir="rtl"
           className="
@@ -192,42 +233,58 @@ export default async function Services() {
             px-4 pb-4
             [scrollbar-width:none]
             [&::-webkit-scrollbar]:hidden
+
             sm:mx-0 sm:px-0
+
             md:grid md:grid-cols-2 md:gap-6
             md:overflow-visible md:pb-0
+
             lg:grid-cols-3 lg:gap-8
           "
         >
           {serviceList.map(([slug, service]) => {
+
             // חיבור למסד הנתונים
             const dbService =
               dbBySlug.get(slug) ||
               (slug === "fueling"
                 ? dbBySlug.get("refuel")
                 : undefined);
+
             const image =
               dbService?.image?.trim()
                 ? dbService.image
                 : service.image;
+
             // כתובת דף השירות
             const serviceSlug =
               slug === "fueling" && dbBySlug.has("refuel")
                 ? "refuel"
                 : slug;
+
             return (
               <article
                 key={slug}
-                className="
+                className={`
                   group flex w-[82%] shrink-0 snap-center
                   flex-col overflow-hidden rounded-2xl
                   border border-[#2a2a2a] bg-[#111]
                   transition-colors duration-300
                   hover:border-[#D4AF37]
+
                   sm:w-[65%]
+
                   md:w-auto md:shrink md:snap-align-none
                   md:rounded-3xl
-                "
+
+                  ${
+                   slug === "proposal-design"
+                      ? "lg:col-start-2"
+                      : ""
+                  }
+                `}
               >
+
                 {/* תמונה */}
                 <div
                   className="
@@ -250,10 +307,13 @@ export default async function Services() {
                       md:group-hover:scale-105
                     "
                   />
+
                   <div className="absolute inset-0 bg-black/10" />
                 </div>
+
                 {/* תוכן */}
                 <div className="flex flex-1 flex-col p-4 text-center sm:p-5 lg:p-6">
+
                   <h3
                     className="
                       mb-2 text-lg font-bold leading-tight
@@ -262,6 +322,7 @@ export default async function Services() {
                   >
                     {service.title}
                   </h3>
+
                   <p
                     className="
                       mb-4 text-sm leading-5 text-gray-300
@@ -270,6 +331,7 @@ export default async function Services() {
                   >
                     {service.subtitle}
                   </p>
+
                   <Link
                     href={`/services/${serviceSlug}`}
                     className="
@@ -285,15 +347,18 @@ export default async function Services() {
                   >
                     למידע נוסף
                   </Link>
+
                 </div>
               </article>
             );
           })}
         </div>
+
         {/* רמז להחלקה במובייל */}
         <p className="mt-2 text-center text-xs text-gray-500 md:hidden">
           החליקו לצדדים לצפייה בכל השירותים ←
         </p>
+
       </div>
     </section>
   );
