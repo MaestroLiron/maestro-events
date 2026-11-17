@@ -22,6 +22,28 @@ const prisma = new PrismaClient({
 
 export async function GET() {
   try {
+    // בדיקה אם שירות הצעת נישואין כבר קיים
+    let proposalService = await prisma.service.findUnique({
+      where: {
+        slug: "proposal-design",
+      },
+    });
+
+    // אם לא קיים – יצירה שלו במסד הנתונים
+    if (!proposalService) {
+      await prisma.service.create({
+        data: {
+          title: "עיצוב הצעת נישואין",
+          slug: "proposal-design",
+          description: "",
+          image: "/services/proposal.jpg",
+          sortOrder: 999,
+          isActive: true,
+        },
+      });
+    }
+
+    // טעינת כל השירותים
     const services = await prisma.service.findMany({
       orderBy: {
         sortOrder: "asc",
