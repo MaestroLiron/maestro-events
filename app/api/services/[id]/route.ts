@@ -3,6 +3,7 @@ import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
+import { randomUUID } from "crypto";
 
 // ==========================================
 // Prisma
@@ -35,7 +36,7 @@ export async function PUT(
 
     const serviceId = Number(id);
 
-    if (!Number.isInteger(serviceId)) {
+    if (!Number.isInteger(serviceId) || serviceId <= 0) {
       return NextResponse.json(
         {
           error: "מזהה שירות לא תקין",
@@ -99,15 +100,17 @@ export async function PUT(
     // סוגי תמונות מותרים
     // ========================================
 
-    const allowedTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/webp",
-      "image/gif",
-    ];
+    const allowedTypes: Record<string, string> = {
+      "image/jpeg": ".jpg",
+      "image/jpg": ".jpg",
+      "image/png": ".png",
+      "image/webp": ".webp",
+      "image/gif": ".gif",
+    };
 
-    if (!allowedTypes.includes(image.type)) {
+    const extension = allowedTypes[image.type];
+
+    if (!extension) {
       return NextResponse.json(
         {
           error:
@@ -139,13 +142,14 @@ export async function PUT(
     }
 
     // ========================================
-    // תיקיית התמונות
+    // תיקיית התמונות הקבועה
     // ========================================
 
     const uploadDirectory =
       path.join(
         process.cwd(),
         "public",
+        "uploads",
         "services"
       );
 
@@ -157,16 +161,7 @@ export async function PUT(
     );
 
     // ========================================
-    // סיומת
-    // ========================================
-
-    const extension =
-      path
-        .extname(image.name)
-        .toLowerCase() || ".jpg";
-
-    // ========================================
-    // שם קובץ
+    // שם קובץ בטוח וייחודי
     // ========================================
 
     const safeSlug =
@@ -174,7 +169,7 @@ export async function PUT(
         .trim()
         .toLowerCase()
         .replace(
-          /[^a-z0-9א-ת-_]/g,
+          /[^a-z0-9א-ת_-]/g,
           "-"
         )
         .replace(
@@ -183,7 +178,7 @@ export async function PUT(
         );
 
     const fileName =
-      `${safeSlug}-${Date.now()}${extension}`;
+      `${safeSlug}-${randomUUID()}${extension}`;
 
     const filePath =
       path.join(
@@ -211,10 +206,10 @@ export async function PUT(
     // ========================================
 
     const imageUrl =
-      `/services/${fileName}`;
+      `/uploads/services/${fileName}`;
 
     // ========================================
-    // עדכון השירות
+    // עדכון השירות במסד הנתונים
     // ========================================
 
     const service =
@@ -234,6 +229,7 @@ export async function PUT(
     return NextResponse.json(
       service
     );
+
   } catch (error) {
     console.error(
       "PUT service image error:",
